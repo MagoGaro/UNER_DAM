@@ -38,7 +38,14 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Mi Ciudad Colón usa tu ubicación para mostrarte en el mapa los lugares cercanos y avisarte cuando llegás a uno."
+        }
+      ],
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,

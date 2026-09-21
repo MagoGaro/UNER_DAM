@@ -25,6 +25,84 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Mapa, «Cerca tuyo», flecha y avisos de proximidad
+
+Parte del Integrante 2 (mapa, lista «Cerca tuyo», «Cómo llegar», flecha de
+orientación y avisos de proximidad). Vive toda bajo `src/`, separada por
+capas:
+
+- `src/tipos/` — `Lugar`, `Categoria`, `Coordenadas`, `Preferencias`
+  (provisorios: pendiente de acuerdo con el equipo, ver más abajo).
+- `src/utils/geo.ts` — cálculo puro: `distanciaMetros`, `rumboGrados`,
+  `formatearDistancia` (+ `yaAviseHoy`/`marcarAviso`, reexportados desde
+  `src/almacenamiento/`). Con tests en `geo.test.ts`.
+- `src/servicios/lugares/` — `ServicioLugares` (interfaz) +
+  `ServicioLugaresDePrueba` (mock con 8 lugares reales de Colón, Entre
+  Ríos). **Único lugar que hay que tocar** para conectar el servicio real.
+- `src/hooks/` — `usePosicionUsuario`, `useRumboDispositivo`,
+  `useLugaresCercanos`, `useAvisosProximidad`: cada uno con una sola
+  responsabilidad, todos con manejo explícito de permiso denegado / error
+  / sensor no disponible.
+- `src/componentes/` — `MapaLugares` (+ variante `.web.tsx`, ver abajo),
+  `FiltroCategoria`, `ListaCercaTuyo`, `FlechaOrientacion`, `EstadoVacio`.
+- `src/notificaciones/` y `src/navegacion/` — avisos de proximidad
+  (expo-notifications + expo-haptics) y «Cómo llegar» (Linking a Google/
+  Apple Maps), cada uno detrás de su propia interfaz.
+- `src/pantallas/InicioPantalla.tsx` — arma todo lo anterior; se monta
+  desde [`app/(tabs)/index.tsx`](app/(tabs)/index.tsx).
+
+### Decisiones tomadas (por si Valeria responde distinto)
+
+- La flecha usa `expo-location.watchHeadingAsync` (no
+  `expo-sensors.Magnetometer` crudo): ya combina el magnetómetro con la
+  corrección de norte verdadero y expone el nivel de calibración.
+- `react-native-maps` en vez del nuevo `expo-maps`: `expo-maps` está en
+  alpha, no soporta Expo Go y no tiene componente único para ambas
+  plataformas.
+- `react-native-maps` no soporta web. `MapaLugares.web.tsx` muestra un
+  aviso en vez de romper `npm run web`; la vista «Cerca tuyo» sí funciona
+  en web.
+- Radio "lejos" (para mostrar la flecha) y preferencias de aviso
+  (`avisarProximidad`, `radioAvisoMetros`) están en
+  `src/configuracion/preferenciasPorDefecto.ts`, con valores por defecto
+  hasta que existan las Preferencias reales del Integrante 3.
+
+### Pendiente con el equipo (ver el seguimiento en PDF)
+
+- Tipos definitivos de `Lugar`/`Categoria`/`Preferencias` (hoy son
+  provisorios, en `src/tipos/`).
+- Reemplazar `ServicioLugaresDePrueba` por el servicio real (Integrante 1).
+- Reemplazar `app/lugar/[id].tsx` (placeholder) por la pantalla de detalle
+  real (Integrante 1); `src/navegacion/rutas.ts` es el único archivo a
+  tocar si cambia la ruta.
+- Mapa base sin mosaicos offline (dentro de El Palmar, por ejemplo): sin
+  resolver, ver pregunta 3 del seguimiento.
+- A partir de cuántos metros se considera «lejos» un lugar: hoy es
+  `UMBRAL_LEJOS_METROS` en `src/configuracion/preferenciasPorDefecto.ts`.
+
+### Probar en un iPhone físico con Expo Go
+
+La versión de Expo Go del **App Store** no siempre coincide con el SDK del
+proyecto (54): Apple tarda en aprobar cada SDK nuevo, así que en algún
+momento el store queda por delante y tira "incompatible con esta versión
+de Expo Go". Si pasa:
+
+- En **Android** (Play Store) suele estar más al día, es la forma más
+  rápida de probar mientras tanto.
+- La alternativa para iPhone es `npx eas-cli@latest go --sdk-version
+  54.0.0` (arma una build a medida y la sube a TestFlight), pero necesita
+  una cuenta de Apple Developer Program paga — no es algo para resolver
+  al toque, hay que decidirlo en equipo cuando se organice el build de
+  EAS de producción.
+- Mientras tanto, `npm run web` sigue sirviendo para probar todo lo que
+  no sea el mapa (ver limitación de `react-native-maps` más arriba).
+
+### Tests
+
+```bash
+npm run test
+```
+
 ## Get a fresh project
 
 When you're ready, run:
