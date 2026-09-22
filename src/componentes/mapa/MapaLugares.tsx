@@ -4,6 +4,7 @@ import MapView, { type Region } from 'react-native-maps';
 import type { LugarCercano } from '@/src/hooks/useLugaresCercanos';
 import type { Coordenadas } from '@/src/tipos/coordenadas';
 import { MarcadorLugar } from './MarcadorLugar';
+import { MarcadorUsuario } from './MarcadorUsuario';
 
 const REGION_COLON: Region = {
   latitude: -32.2241,
@@ -33,9 +34,8 @@ export function MapaLugares({ lugares, posicionUsuario, onVerDetalle }: MapaLuga
     <MapView
       style={StyleSheet.absoluteFill}
       initialRegion={regionInicial}
-      showsUserLocation={posicionUsuario !== null}
-      showsMyLocationButton
       testID="mapa-lugares">
+      {posicionUsuario ? <MarcadorUsuario posicion={posicionUsuario} /> : null}
       {lugares.map((lugar) => (
         <MarcadorLugar key={lugar.id} lugar={lugar} onVerDetalle={onVerDetalle} />
       ))}

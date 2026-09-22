@@ -1,4 +1,3 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { Callout, Marker } from 'react-native-maps';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -10,7 +9,12 @@ interface MarcadorLugarProps {
   onVerDetalle: (lugar: LugarCercano) => void;
 }
 
-/** Un marcador del mapa: color e ícono según la categoría del lugar (tareas 1 y 2). */
+/**
+ * Un marcador del mapa: pin nativo con el color de la categoría del
+ * lugar (tareas 1 y 2). Se usa el pin por defecto de react-native-maps
+ * (en vez de un ícono custom) para que tenga la forma de lágrima
+ * clásica de un mapa, más liviano y consistente entre Android/iOS.
+ */
 export function MarcadorLugar({ lugar, onVerDetalle }: MarcadorLugarProps) {
   const metadato = obtenerMetadatoCategoria(lugar.categoria);
 
@@ -18,10 +22,7 @@ export function MarcadorLugar({ lugar, onVerDetalle }: MarcadorLugarProps) {
     <Marker
       coordinate={{ latitude: lugar.coordenadas.latitud, longitude: lugar.coordenadas.longitud }}
       title={lugar.nombre}
-      tracksViewChanges={false}>
-      <View style={[styles.pin, { backgroundColor: metadato.color }]}>
-        <Ionicons name={metadato.icono} size={16} color="#fff" />
-      </View>
+      pinColor={metadato.color}>
       <Callout onPress={() => onVerDetalle(lugar)} tooltip={false}>
         <View style={styles.callout}>
           <Text style={styles.calloutNombre} numberOfLines={2}>
@@ -38,15 +39,6 @@ export function MarcadorLugar({ lugar, onVerDetalle }: MarcadorLugarProps) {
 }
 
 const styles = StyleSheet.create({
-  pin: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
   callout: {
     minWidth: 160,
     maxWidth: 240,

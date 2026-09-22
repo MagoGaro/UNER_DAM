@@ -9,7 +9,12 @@ interface FiltroCategoriaProps {
   onCambiarCategoria: (categoria: Categoria | null) => void;
 }
 
-/** Chips horizontales para filtrar el mapa y la lista por categoría (tarea 2). */
+/**
+ * Chips horizontales para filtrar el mapa y la lista por categoría
+ * (tarea 2). Cada chip va siempre relleno con su color; el seleccionado
+ * se marca con un anillo blanco, para no depender de un estado "gris"
+ * que el mockup de diseño no usa.
+ */
 export function FiltroCategoria({ categoriaSeleccionada, onCambiarCategoria }: FiltroCategoriaProps) {
   return (
     <ScrollView
@@ -54,11 +59,9 @@ function Chip({ etiqueta, color, icono, seleccionado, onPress }: ChipProps) {
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected: seleccionado }}
-      style={[styles.chip, { backgroundColor: seleccionado ? color : '#F1F3F5' }]}>
-      <Ionicons name={icono} size={16} color={seleccionado ? '#fff' : color} />
-      <Text
-        style={[styles.etiqueta, { color: seleccionado ? '#fff' : '#343A40' }]}
-        numberOfLines={1}>
+      style={[styles.chip, { backgroundColor: color }, seleccionado && styles.chipSeleccionado]}>
+      <Ionicons name={icono} size={16} color="#fff" />
+      <Text style={styles.etiqueta} numberOfLines={1}>
         {etiqueta}
       </Text>
     </TouchableOpacity>
@@ -75,12 +78,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  chipSeleccionado: {
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
   },
   etiqueta: {
     fontSize: 14,
     fontWeight: '600',
+    color: '#fff',
   },
 });

@@ -43,13 +43,25 @@ capas:
   `useLugaresCercanos`, `useAvisosProximidad`: cada uno con una sola
   responsabilidad, todos con manejo explícito de permiso denegado / error
   / sensor no disponible.
-- `src/componentes/` — `MapaLugares` (+ variante `.web.tsx`, ver abajo),
-  `FiltroCategoria`, `ListaCercaTuyo`, `FlechaOrientacion`, `EstadoVacio`.
+- `src/componentes/mapa/` — `MapaLugares` (+ variante `.web.tsx`, ver
+  abajo), `MarcadorLugar`, `MarcadorUsuario` (burbuja «Vos estás acá»),
+  `FiltroCategoria`, `BarraBusqueda`.
+- `src/componentes/cerca-tuyo/` — `HojaCercaTuyo` (hoja inferior
+  arrastrable, con `Animated` + `PanResponder` nativos de React Native,
+  sin sumar una librería nueva), `ListaCercaTuyo`, `TarjetaLugarCercano`.
+- `src/componentes/orientacion/FlechaOrientacion.tsx`,
+  `src/componentes/estados/` (`EstadoVacio`, `PantallaPendiente` para las
+  secciones de la barra de tabs que todavía no desarrolló su responsable).
 - `src/notificaciones/` y `src/navegacion/` — avisos de proximidad
   (expo-notifications + expo-haptics) y «Cómo llegar» (Linking a Google/
   Apple Maps), cada uno detrás de su propia interfaz.
-- `src/pantallas/InicioPantalla.tsx` — arma todo lo anterior; se monta
-  desde [`app/(tabs)/index.tsx`](app/(tabs)/index.tsx).
+- `src/pantallas/InicioPantalla.tsx` — arma todo lo anterior: mapa a toda
+  pantalla, header + buscador + chips flotando arriba, hoja «Cerca tuyo»
+  flotando abajo. Se monta desde
+  [`app/(tabs)/index.tsx`](app/(tabs)/index.tsx). La barra de tabs
+  (`app/(tabs)/_layout.tsx`) tiene las 4 secciones de la app completa
+  (Mapa / Agenda / Mi recorrido / Yo); las últimas tres son placeholders
+  hasta que sus responsables entreguen su parte.
 
 ### Decisiones tomadas (por si Valeria responde distinto)
 
@@ -60,8 +72,21 @@ capas:
   alpha, no soporta Expo Go y no tiene componente único para ambas
   plataformas.
 - `react-native-maps` no soporta web. `MapaLugares.web.tsx` muestra un
-  aviso en vez de romper `npm run web`; la vista «Cerca tuyo» sí funciona
-  en web.
+  aviso en vez de romper `npm run web`; la hoja «Cerca tuyo» sí funciona
+  en web (es la única forma de ver los lugares ahí).
+- Categorías ajustadas a lo que necesita Colón como ciudad de río y
+  termas (`playa`, `termas`, `museo`, `monumento`, `mirador`,
+  `restaurante`, `alojamiento`, `otro`) en vez del set inventado
+  originalmente — a confirmar igual con el equipo, siguen siendo
+  provisorias.
+- `Lugar` suma `imagenUrl`/`calificacion`/`descripcionCorta`, opcionales,
+  solo para que la tarjeta de «Cerca tuyo» tenga contenido; se
+  reemplazan cuando el Integrante 1 entregue el catálogo real. Las
+  imágenes de prueba son de `picsum.photos` (placeholders, no fotos
+  reales de los lugares).
+- Mapa y lista conviven en pantalla (hoja arrastrable con dos posiciones)
+  en vez de alternar entre dos vistas, para calzar con el mockup de
+  diseño del equipo.
 - Radio "lejos" (para mostrar la flecha) y preferencias de aviso
   (`avisarProximidad`, `radioAvisoMetros`) están en
   `src/configuracion/preferenciasPorDefecto.ts`, con valores por defecto

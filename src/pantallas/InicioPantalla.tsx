@@ -1,11 +1,19 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import type { ComponentProps } from 'react';
-import { useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BarraBusqueda } from '@/src/componentes/mapa/BarraBusqueda';
 import { EstadoVacio } from '@/src/componentes/estados/EstadoVacio';
+import { HojaCercaTuyo } from '@/src/componentes/cerca-tuyo/HojaCercaTuyo';
 import { ListaCercaTuyo } from '@/src/componentes/cerca-tuyo/ListaCercaTuyo';
 import { FiltroCategoria } from '@/src/componentes/mapa/FiltroCategoria';
 import { MapaLugares } from '@/src/componentes/mapa/MapaLugares';
@@ -17,11 +25,19 @@ import { usePosicionUsuario } from '@/src/hooks/usePosicionUsuario';
 import { rutaDetalleLugar } from '@/src/navegacion/rutas';
 import type { Categoria } from '@/src/tipos/categoria';
 
-type Vista = 'mapa' | 'lista';
+function normalizar(texto: string): string {
+  return texto
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim();
+}
 
 export function InicioPantalla() {
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<Categoria | null>(null);
-  const [vista, setVista] = useState<Vista>('mapa');
+  const [filtrosVisibles, setFiltrosVisibles] = useState(true);
+  const [textoBusqueda, setTextoBusqueda] = useState('');
+  const inputBusquedaRef = useRef<TextInput>(null);
 
   const { estado: estadoPosicion, posicion, precisionMetros, reintentar: reintentarPosicion } =
     usePosicionUsuario();
@@ -38,27 +54,57 @@ export function InicioPantalla() {
     preferencias: PREFERENCIAS_POR_DEFECTO,
   });
 
+  const lugaresFiltrados = useMemo(() => {
+    const busqueda = normalizar(textoBusqueda);
+    if (!busqueda) return lugares;
+    return lugares.filter((lugar) => normalizar(lugar.nombre).includes(busqueda));
+  }, [lugares, textoBusqueda]);
+
   function verDetalle(lugar: LugarCercano) {
     router.push(rutaDetalleLugar(lugar.id));
   }
 
-  const lugarParaFlecha = posicion ? lugares[0] ?? null : null;
+  const lugarParaFlecha = posicion ? lugaresFiltrados[0] ?? null : null;
 
   return (
-    <SafeAreaView style={styles.contenedor} edges={['top']}>
-      <View style={styles.encabezado}>
-        <Text style={styles.titulo}>Mi Ciudad Colón</Text>
-        <SelectorVista vista={vista} onCambiar={setVista} />
+    <View style={styles.contenedor}>
+      <MapaLugares lugares={lugaresFiltrados} posicionUsuario={posicion} onVerDetalle={verDetalle} />
+
+      <SafeAreaView style={styles.overlaySuperior} edges={['top']} pointerEvents="box-none">
+        <View style={styles.encabezado}>
+          <Text style={styles.titulo}>Colón</Text>
+          <TouchableOpacity
+            onPress={() => inputBusquedaRef.current?.focus()}
+            accessibilityRole="button"
+            accessibilityLabel="Buscar"
+            style={styles.botonBuscarHeader}>
+            <Ionicons name="search" size={22} color="#212529" />
+          </TouchableOpacity>
+        </View>
+
+        <BarraBusqueda
+          ref={inputBusquedaRef}
+          valor={textoBusqueda}
+          onCambiarValor={setTextoBusqueda}
+          filtrosVisibles={filtrosVisibles}
+          onCambiarFiltrosVisibles={setFiltrosVisibles}
+        />
+
+        {filtrosVisibles ? (
+          <FiltroCategoria
+            categoriaSeleccionada={categoriaSeleccionada}
+            onCambiarCategoria={setCategoriaSeleccionada}
+          />
+        ) : null}
+
+        <AvisoPosicion estado={estadoPosicion} onReintentar={reintentarPosicion} />
+      </SafeAreaView>
+
+      <View style={styles.flechaFlotante} pointerEvents="box-none">
+        <FlechaOrientacion lugar={lugarParaFlecha} posicionUsuario={posicion} />
       </View>
 
-      <FiltroCategoria
-        categoriaSeleccionada={categoriaSeleccionada}
-        onCambiarCategoria={setCategoriaSeleccionada}
-      />
-
-      <AvisoPosicion estado={estadoPosicion} onReintentar={reintentarPosicion} />
-
-      <View style={styles.contenido}>
+      <HojaCercaTuyo titulo="Cerca tuyo">
         {estadoLugares === 'cargando' ? (
           <ActivityIndicator style={styles.cargando} size="large" />
         ) : estadoLugares === 'error' ? (
@@ -69,62 +115,11 @@ export function InicioPantalla() {
             textoBoton="Reintentar"
             onPresionarBoton={reintentarLugares}
           />
-        ) : lugares.length === 0 ? (
-          <EstadoVacio icono="location-outline" titulo="No hay lugares para esta categoría" />
-        ) : vista === 'mapa' ? (
-          <View style={styles.mapaContenedor}>
-            <MapaLugares lugares={lugares} posicionUsuario={posicion} onVerDetalle={verDetalle} />
-            <View style={styles.flechaFlotante}>
-              <FlechaOrientacion lugar={lugarParaFlecha} posicionUsuario={posicion} />
-            </View>
-          </View>
         ) : (
-          <ListaCercaTuyo lugares={lugares} onVerDetalle={verDetalle} />
+          <ListaCercaTuyo lugares={lugaresFiltrados} onVerDetalle={verDetalle} />
         )}
-      </View>
-    </SafeAreaView>
-  );
-}
-
-function SelectorVista({ vista, onCambiar }: { vista: Vista; onCambiar: (vista: Vista) => void }) {
-  return (
-    <View style={styles.selector}>
-      <BotonSelector
-        etiqueta="Mapa"
-        icono="map"
-        activo={vista === 'mapa'}
-        onPress={() => onCambiar('mapa')}
-      />
-      <BotonSelector
-        etiqueta="Cerca tuyo"
-        icono="list"
-        activo={vista === 'lista'}
-        onPress={() => onCambiar('lista')}
-      />
+      </HojaCercaTuyo>
     </View>
-  );
-}
-
-function BotonSelector({
-  etiqueta,
-  icono,
-  activo,
-  onPress,
-}: {
-  etiqueta: string;
-  icono: ComponentProps<typeof Ionicons>['name'];
-  activo: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected: activo }}
-      style={[styles.botonSelector, activo && styles.botonSelectorActivo]}>
-      <Ionicons name={icono} size={16} color={activo ? '#fff' : '#339AF0'} />
-      <Text style={[styles.botonSelectorTexto, activo && styles.botonSelectorTextoActivo]}>{etiqueta}</Text>
-    </TouchableOpacity>
   );
 }
 
@@ -159,50 +154,44 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
+  overlaySuperior: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
   encabezado: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 4,
   },
   titulo: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#212529',
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#E8590C',
   },
-  selector: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  botonSelector: {
-    flexDirection: 'row',
+  botonBuscarHeader: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#339AF0',
-  },
-  botonSelectorActivo: {
-    backgroundColor: '#339AF0',
-  },
-  botonSelectorTexto: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#339AF0',
-  },
-  botonSelectorTextoActivo: {
-    color: '#fff',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
   },
   avisoPosicion: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
-    marginHorizontal: 12,
-    marginBottom: 4,
+    marginHorizontal: 16,
+    marginTop: 4,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
@@ -218,20 +207,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#5C4A00',
   },
-  contenido: {
-    flex: 1,
-  },
-  cargando: {
-    flex: 1,
-  },
-  mapaContenedor: {
-    flex: 1,
-  },
   flechaFlotante: {
     position: 'absolute',
-    top: 12,
     left: 12,
     right: 12,
+    bottom: 166,
     alignItems: 'flex-start',
+  },
+  cargando: {
+    marginTop: 24,
   },
 });

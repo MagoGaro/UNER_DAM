@@ -14,4 +14,12 @@ export interface Lugar {
   categoria: Categoria;
   coordenadas: Coordenadas;
   activo: boolean;
+  /**
+   * Campos opcionales solo para la tarjeta de «Cerca tuyo» (foto,
+   * puntaje, bajada). Provisorios: el detalle real (con audioguía,
+   * horarios, etc.) lo define el Integrante 1.
+   */
+  imagenUrl?: string;
+  calificacion?: number;
+  descripcionCorta?: string;
 }
