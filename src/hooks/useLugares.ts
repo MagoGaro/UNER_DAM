@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { servicioLugares as servicioLugaresPorDefecto } from '@/src/servicios/lugares';
-import type { ServicioLugares } from '@/src/servicios/lugares/ServicioLugares';
+import type { ServicioLugares, FiltrosLugares } from '@/src/servicios/lugares/ServicioLugares';
 import type { Lugar } from '@/src/tipos/lugar';
 
 export type EstadoCarga = 'cargando' | 'listo' | 'error';
@@ -19,7 +19,10 @@ export interface CatalogoLugares {
  * cargando/listo/error con reintento, para el caso "error de red del
  * servicio" del seguimiento.
  */
-export function useLugares(servicio: ServicioLugares = servicioLugaresPorDefecto): CatalogoLugares {
+export function useLugares(
+  filtros?: FiltrosLugares,
+  servicio: ServicioLugares = servicioLugaresPorDefecto
+): CatalogoLugares{
   const [lugares, setLugares] = useState<Lugar[]>([]);
   const [estado, setEstado] = useState<EstadoCarga>('cargando');
   const [intento, setIntento] = useState(0);
@@ -32,7 +35,7 @@ export function useLugares(servicio: ServicioLugares = servicioLugaresPorDefecto
       .listarLugares()
       .then((resultado) => {
         if (cancelado) return;
-        setLugares(resultado.filter((lugar) => lugar.activo));
+        setLugares(resultado.filter((lugar) => lugar.activo)as Lugar[]);
         setEstado('listo');
       })
       .catch(() => {
@@ -42,7 +45,7 @@ export function useLugares(servicio: ServicioLugares = servicioLugaresPorDefecto
     return () => {
       cancelado = true;
     };
-  }, [servicio, intento]);
+  }, [servicio, intento, filtros?.busqueda, filtros?.categoriaId]);
 
   const reintentar = useCallback(() => setIntento((n) => n + 1), []);
 

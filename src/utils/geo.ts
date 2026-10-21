@@ -1,5 +1,6 @@
 import type { Coordenadas } from '@/src/tipos/coordenadas';
 import { marcarAviso, yaAviseHoy } from '@/src/almacenamiento/registroAvisosDiarios';
+import { Platform, Linking } from 'react-native';
 
 const RADIO_TIERRA_METROS = 6_371_000;
 
@@ -41,6 +42,24 @@ export function formatearDistancia(metros: number): string {
   }
   const km = (metros / 1000).toFixed(1).replace('.', ',');
   return `${km} km`;
+}
+
+export function abrirEnMapaExterno(latitud: number, longitud: number, nombre: string) {
+  const etiqueta = encodeURIComponent(nombre);
+  const esquemaUrl = Platform.select({
+    ios: `maps:0,0?q=${etiqueta}@${latitud},${longitud}`,
+    android: `geo:0,0?q=${latitud},${longitud}(${etiqueta})`,
+  });
+  const urlWeb = `https://www.google.com/maps/dir/?api=1&destination=${latitud},${longitud}`;
+  const urlFinal = esquemaUrl ?? urlWeb;
+
+  Linking.canOpenURL(urlFinal).then((soportado)=> {
+    if (soportado){
+      Linking.openURL(urlFinal);
+    }else {
+      Linking.openURL(urlWeb);
+    }
+  });
 }
 
 /**

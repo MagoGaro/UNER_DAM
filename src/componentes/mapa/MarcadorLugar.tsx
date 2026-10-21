@@ -16,20 +16,21 @@ interface MarcadorLugarProps {
  * clásica de un mapa, más liviano y consistente entre Android/iOS.
  */
 export function MarcadorLugar({ lugar, onVerDetalle }: MarcadorLugarProps) {
-  const metadato = obtenerMetadatoCategoria(lugar.categoria);
+  // Solo llamamos a obtenerMetadatoCategoria si lugar.categoria está definido
+  const metadato = lugar.categoria ? obtenerMetadatoCategoria(lugar.categoria) : null;
 
   return (
     <Marker
       coordinate={{ latitude: lugar.coordenadas.latitud, longitude: lugar.coordenadas.longitud }}
       title={lugar.nombre}
-      pinColor={metadato.color}>
+      pinColor={metadato?.color ?? '#E8590C'}>
       <Callout onPress={() => onVerDetalle(lugar)} tooltip={false}>
         <View style={styles.callout}>
           <Text style={styles.calloutNombre} numberOfLines={2}>
             {lugar.nombre}
           </Text>
           <Text style={styles.calloutDistancia}>
-            {lugar.distanciaFormateada ?? metadato.etiqueta}
+            {lugar.distanciaFormateada ?? metadato?.etiqueta ?? ''}
           </Text>
           <Text style={styles.calloutAccion}>Ver detalle ›</Text>
         </View>

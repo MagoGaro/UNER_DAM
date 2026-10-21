@@ -13,11 +13,13 @@ export type Categoria =
   | 'playa'
   | 'termas'
   | 'museo'
+  | 'gastronomia'
+  | 'artesanias'
   | 'monumento'
   | 'mirador'
   | 'restaurante'
   | 'alojamiento'
-  | 'otro';
+  | 'naturaleza';
 
 export interface MetadatoCategoria {
   categoria: Categoria;
@@ -30,15 +32,19 @@ const METADATOS: Record<Categoria, MetadatoCategoria> = {
   playa: { categoria: 'playa', etiqueta: 'Playas', color: '#2E9E4C', icono: 'water' },
   termas: { categoria: 'termas', etiqueta: 'Termas', color: '#E8590C', icono: 'flame' },
   museo: { categoria: 'museo', etiqueta: 'Museos', color: '#6A4C93', icono: 'business' },
+  gastronomia:{categoria:'gastronomia',etiqueta:'Gastronomia',color:'#E03131', icono: 'restaurant'},
+  artesanias:{categoria: 'artesanias', etiqueta: 'Artesanias',color: '#F59F00', icono: 'color-palette'},
+  naturaleza: { categoria: 'naturaleza', etiqueta: 'Naturaleza', color: '#6C757D', icono: 'leaf' },
+  alojamiento: { categoria: 'alojamiento', etiqueta: 'Alojamiento', color: '#D6336C', icono: 'bed' },
   monumento: { categoria: 'monumento', etiqueta: 'Monumentos', color: '#8E5A2D', icono: 'flag' },
   mirador: { categoria: 'mirador', etiqueta: 'Miradores', color: '#1C7ED6', icono: 'eye' },
-  restaurante: { categoria: 'restaurante', etiqueta: 'Restaurantes', color: '#E03131', icono: 'restaurant' },
-  alojamiento: { categoria: 'alojamiento', etiqueta: 'Alojamiento', color: '#D6336C', icono: 'bed' },
-  otro: { categoria: 'otro', etiqueta: 'Otro', color: '#6C757D', icono: 'location' },
+  otro: {categoria: 'otro', etiqueta: 'Otro', color: '#6C757D', icono: 'location' },
 };
 
 export const CATEGORIAS: readonly Categoria[] = Object.keys(METADATOS) as Categoria[];
 
-export function obtenerMetadatoCategoria(categoria: Categoria): MetadatoCategoria {
-  return METADATOS[categoria];
+export function obtenerMetadatoCategoria(categoria: string | undefined| null): MetadatoCategoria {
+  if (!categoria) return METADATOS.otro;
+  const claveLimpia = categoria.replace(/^cat-/,'') as Categoria;
+  return METADATOS[claveLimpia] ?? METADATOS.otro;
 }
