@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 
-import type { ServicioLugares } from '@/src/servicios/lugares/ServicioLugares';
 import type { Categoria } from '@/src/tipos/categoria';
 import type { Coordenadas } from '@/src/tipos/coordenadas';
 import type { Lugar } from '@/src/tipos/lugar';
@@ -13,26 +12,47 @@ export interface LugarCercano extends Lugar {
 }
 
 export interface LugaresCercanos extends Omit<CatalogoLugares, 'lugares'> {
-  /**
-   * Lugares activos, filtrados por categoría si se pidió, ordenados por
-   * distancia cuando hay posición del usuario, o por nombre cuando no
-   * (caso "permiso de ubicación denegado" del seguimiento).
-   */
   lugares: LugarCercano[];
 }
 
-/** Lista «Cerca tuyo» y catálogo para el mapa: mismo dato, ordenado distinto según haya o no posición. */
+/** Normaliza la categoría quitando 'cat-', minúsculas y la 's' del plural (ej: 'cat-playas' -> 'playa') */
+function normalizarCategoria(catRaw: any): string {
+  if (!catRaw) return '';
+  const texto = typeof catRaw === 'object' 
+    ? (catRaw.categoriaId || catRaw.categoria || catRaw.id || '') 
+    : String(catRaw);
+
+  return texto
+    .replace(/^cat-/, '')
+    .toLowerCase()
+    .trim()
+    .replace(/s$/, '');
+}
+
+/** Compara la categoría del lugar con el filtro seleccionado */
+function coincideCategoria(lugar: any, categoriaSeleccionada: Categoria | null): boolean {
+  if (!categoriaSeleccionada) return true;
+
+  const filtroLimpio = normalizarCategoria(categoriaSeleccionada);
+  if (!filtroLimpio || filtroLimpio === 'todo') return true;
+
+  // Lee 'categoriaId' de LUGARES_DE_PRUEBA o 'categoria' según corresponda
+  const catLugar = lugar.categoriaId ?? lugar.categoria;
+  const lugarLimpio = normalizarCategoria(catLugar);
+
+  return lugarLimpio === filtroLimpio;
+}
+
 export function useLugaresCercanos(
   posicion: Coordenadas | null,
-  categoriaSeleccionada: Categoria | null,
-  servicio?: ServicioLugares
+  categoriaSeleccionada: Categoria | null
 ): LugaresCercanos {
-  const { lugares, estado, reintentar } = useLugares(servicio);
+  const { lugares, estado, reintentar } = useLugares();
 
   const lugaresOrdenados = useMemo<LugarCercano[]>(() => {
-    const filtrados = categoriaSeleccionada
-      ? lugares.filter((lugar) => lugar.categoria === categoriaSeleccionada)
-      : lugares;
+    const filtrados = lugares.filter((lugar) =>
+      coincideCategoria(lugar, categoriaSeleccionada)
+    );
 
     const conDistancia: LugarCercano[] = filtrados.map((lugar) => {
       const distancia = posicion ? distanciaMetros(posicion, lugar.coordenadas) : null;

@@ -12,7 +12,7 @@ interface TarjetaLugarCercanoProps {
 
 export function TarjetaLugarCercano({ lugar, onVerDetalle }: TarjetaLugarCercanoProps) {
   // Evaluamos de forma segura la categoría o metadato
-  const metadato = lugar.categoria ? obtenerMetadatoCategoria(lugar.categoria) : null;
+  const metadato = lugar.categoria ? obtenerMetadatoCategoria(lugar.categoriaId) : null;
   const colorChip = metadato?.color ?? '#E8590C';
   const etiquetaCategoria = metadato?.etiqueta ?? 'Lugar';
 

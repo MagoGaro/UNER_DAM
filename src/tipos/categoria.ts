@@ -19,7 +19,8 @@ export type Categoria =
   | 'mirador'
   | 'restaurante'
   | 'alojamiento'
-  | 'naturaleza';
+  | 'naturaleza'
+  | 'otro';
 
 export interface MetadatoCategoria {
   categoria: Categoria;
@@ -38,6 +39,7 @@ const METADATOS: Record<Categoria, MetadatoCategoria> = {
   alojamiento: { categoria: 'alojamiento', etiqueta: 'Alojamiento', color: '#D6336C', icono: 'bed' },
   monumento: { categoria: 'monumento', etiqueta: 'Monumentos', color: '#8E5A2D', icono: 'flag' },
   mirador: { categoria: 'mirador', etiqueta: 'Miradores', color: '#1C7ED6', icono: 'eye' },
+  restaurante: {categoria : 'restaurante', etiqueta: 'Restaurante', color: '#D9480F', icono: 'restaurant' },
   otro: {categoria: 'otro', etiqueta: 'Otro', color: '#6C757D', icono: 'location' },
 };
 
