@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Linking } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { Image } from 'expo-image';
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { evaluarEstadoHorario } from '@/src/utils/horarios';
 import { abrirEnMapaExterno } from '@/src/utils/geo';
 import type { Lugar } from '@/src/tipos/lugar';
 import { servicioLugares } from '@/src/servicios/lugares';
+import { rutaConfirmarVisita } from '@/src/navegacion/rutas';
 
 function formatearTiempo(segundos: number): string {
   if (!segundos || isNaN(segundos)) return '0:00';
@@ -127,6 +128,17 @@ export default function DetalleLugarPantalla() {
               <Text style={estilos.textoComoLlegar}>Cómo llegar (Abrir Mapa)</Text>
             </Pressable>
           </View>
+
+          {/* Registrar visita (Mi recorrido, punto 4): la pantalla de confirmación
+              detecta sola si el turista está al lado y lo registra como GPS. */}
+          <Pressable
+            style={estilos.botonRegistrarVisita}
+            onPress={() => router.push(rutaConfirmarVisita(lugar.id, 'manual'))}
+            accessibilityRole="button"
+          >
+            <Ionicons name="footsteps-outline" size={22} color="#fff" />
+            <Text style={estilos.textoRegistrarVisita}>Registrar visita</Text>
+          </Pressable>
 
           {/* Reproductor de Audioguía Reactivo */}
           {lugar.audioguia && (
@@ -253,6 +265,16 @@ const estilos = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   textoComoLlegar: { color: '#0B5394', fontWeight: 'bold', fontSize: 14 },
+  botonRegistrarVisita: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    minHeight: 52,
+    borderRadius: 14,
+    backgroundColor: '#C2410C',
+  },
+  textoRegistrarVisita: { color: '#fff', fontWeight: '800', fontSize: 17 },
 
   descripcion: { fontSize: 16, lineHeight: 24, color: '#4A5568' },
   error: { fontSize: 16, color: 'red' },

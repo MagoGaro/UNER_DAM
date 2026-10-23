@@ -11,10 +11,11 @@ interface TarjetaLugarCercanoProps {
 }
 
 export function TarjetaLugarCercano({ lugar, onVerDetalle }: TarjetaLugarCercanoProps) {
-  // Evaluamos de forma segura la categoría o metadato
-  const metadato = lugar.categoria ? obtenerMetadatoCategoria(lugar.categoriaId) : null;
-  const colorChip = metadato?.color ?? '#E8590C';
-  const etiquetaCategoria = metadato?.etiqueta ?? 'Lugar';
+  // El catálogo trae `categoriaId` ("cat-museos"); `categoria` es opcional y
+  // los mocks no lo cargan, por eso antes todas las tarjetas decían "Lugar".
+  const metadato = obtenerMetadatoCategoria(lugar.categoriaId ?? lugar.categoria);
+  const colorChip = metadato.color;
+  const etiquetaCategoria = metadato.etiqueta;
 
   return (
     <Pressable style={styles.tarjeta} onPress={() => onVerDetalle(lugar)}>

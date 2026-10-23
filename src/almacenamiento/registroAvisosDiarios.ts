@@ -1,4 +1,4 @@
-import { kvStoreAsyncStorage, type KVStore } from './kvStore';
+import { kvStorePersistente, type KVStore } from './kvStore';
 
 /** Fecha local en formato YYYY-MM-DD (no UTC, para no cruzar el día antes de tiempo). */
 function fechaDeHoy(): string {
@@ -17,7 +17,7 @@ function claveAviso(lugarId: string, fecha: string): string {
  * Registro de qué lugares ya avisaron proximidad hoy (tarea 8: máximo un
  * aviso por lugar y por día). Se arma con `crearRegistroAvisosDiarios` en
  * vez de exportar funciones sueltas para poder inyectar un KVStore de
- * prueba en los tests, sin depender de AsyncStorage real.
+ * prueba en los tests, sin depender del almacenamiento real.
  */
 export function crearRegistroAvisosDiarios(store: KVStore) {
   return {
@@ -31,7 +31,7 @@ export function crearRegistroAvisosDiarios(store: KVStore) {
   };
 }
 
-const registroPorDefecto = crearRegistroAvisosDiarios(kvStoreAsyncStorage);
+const registroPorDefecto = crearRegistroAvisosDiarios(kvStorePersistente);
 
 export const yaAviseHoy = registroPorDefecto.yaAviseHoy;
 export const marcarAviso = registroPorDefecto.marcarAviso;

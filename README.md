@@ -37,7 +37,7 @@ capas:
   `formatearDistancia` (+ `yaAviseHoy`/`marcarAviso`, reexportados desde
   `src/almacenamiento/`). Con tests en `geo.test.ts`.
 - `src/servicios/lugares/` — `ServicioLugares` (interfaz) +
-  `ServicioLugaresDePrueba` (mock con 8 lugares reales de Colón, Entre
+  `ServicioLugaresDePrueba` (mock con lugares reales de Colón, Entre
   Ríos). **Único lugar que hay que tocar** para conectar el servicio real.
 - `src/hooks/` — `usePosicionUsuario`, `useRumboDispositivo`,
   `useLugaresCercanos`, `useAvisosProximidad`: cada uno con una sola
@@ -60,8 +60,7 @@ capas:
   flotando abajo. Se monta desde
   [`app/(tabs)/index.tsx`](app/(tabs)/index.tsx). La barra de tabs
   (`app/(tabs)/_layout.tsx`) tiene las 4 secciones de la app completa
-  (Mapa / Agenda / Mi recorrido / Yo); las últimas tres son placeholders
-  hasta que sus responsables entreguen su parte.
+  (Mapa / Agenda / Mi recorrido / Yo).
 
 ### Decisiones tomadas (por si Valeria responde distinto)
 
@@ -75,15 +74,9 @@ capas:
   aviso en vez de romper `npm run web`; la hoja «Cerca tuyo» sí funciona
   en web (es la única forma de ver los lugares ahí).
 - Categorías ajustadas a lo que necesita Colón como ciudad de río y
-  termas (`playa`, `termas`, `museo`, `monumento`, `mirador`,
-  `restaurante`, `alojamiento`, `otro`) en vez del set inventado
-  originalmente — a confirmar igual con el equipo, siguen siendo
-  provisorias.
-- `Lugar` suma `imagenUrl`/`calificacion`/`descripcionCorta`, opcionales,
-  solo para que la tarjeta de «Cerca tuyo» tenga contenido; se
-  reemplazan cuando el Integrante 1 entregue el catálogo real. Las
-  imágenes de prueba son de `picsum.photos` (placeholders, no fotos
-  reales de los lugares).
+  termas, a confirmar igual con el equipo, siguen siendo provisorias.
+- `Lugar` suma `imagenUrl`/`calificacion`, opcionales, solo para que la
+  tarjeta de «Cerca tuyo» tenga contenido.
 - Mapa y lista conviven en pantalla (hoja arrastrable con dos posiciones)
   en vez de alternar entre dos vistas, para calzar con el mockup de
   diseño del equipo.
@@ -97,13 +90,60 @@ capas:
 - Tipos definitivos de `Lugar`/`Categoria`/`Preferencias` (hoy son
   provisorios, en `src/tipos/`).
 - Reemplazar `ServicioLugaresDePrueba` por el servicio real (Integrante 1).
-- Reemplazar `app/lugar/[id].tsx` (placeholder) por la pantalla de detalle
-  real (Integrante 1); `src/navegacion/rutas.ts` es el único archivo a
-  tocar si cambia la ruta.
 - Mapa base sin mosaicos offline (dentro de El Palmar, por ejemplo): sin
   resolver, ver pregunta 3 del seguimiento.
 - A partir de cuántos metros se considera «lejos» un lugar: hoy es
   `UMBRAL_LEJOS_METROS` en `src/configuracion/preferenciasPorDefecto.ts`.
+
+## 📅 Agenda de eventos (punto 3 del pedido)
+
+Pestaña **Agenda** (`app/(tabs)/agenda.tsx` → `src/pantallas/AgendaPantalla.tsx`)
+y detalle en `app/evento/[id].tsx` → `src/pantallas/DetalleEventoPantalla.tsx`.
+
+| Pedido de Valeria | Cómo quedó |
+| --- | --- |
+| Ver los eventos por día, empezando por hoy | Tira de días (Hoy, Mañana, sáb 24…) de 14 días; un punto marca los días con eventos. Si un día está vacío, botón «Ver mañana / el próximo día con eventos». |
+| Detalle: qué es, cuándo empieza, cuánto dura, dónde, si es gratis | Cuándo, hora de inicio y fin, duración calculada («5 h», «1 h 30 min»), dónde, entrada («Gratis» / «$ 1.500» / «Precio no informado»). |
+| Asociado a un lugar del catálogo o con dirección suelta | Con `lugarId` muestra el nombre del lugar y lleva a su detalle; con `direccionLibre` la muestra y «Cómo llegar» usa las coordenadas o, si no hay, busca la dirección en la app de mapas. Un `lugarId` que ya no existe no rompe nada. |
+| Guardar un evento y que avise antes | «Guardar y avisarme»: notificación local **60 min antes** (o 10 min antes si falta menos). Pestaña «Guardados». |
+| Cancelado / suspendido por lluvia, y que quien lo guardó se entere | Chip y franja roja en lista y detalle. Al abrir la app, al volver a primer plano y al entrar a la Agenda se compara con lo que se sabía: si un evento guardado se suspende, cancela o cambia de horario, se **cancela el recordatorio** y llega una notificación («Evento suspendido…»). También avisa si vuelve a programarse. |
+| Funciona sin señal | La última agenda y los guardados quedan en el teléfono (`expo-sqlite/kv-store`); sin conexión se muestra esa copia con un aviso. |
+
+Código: `src/agenda/logicaAgenda.ts` (lógica pura, con tests),
+`src/agenda/almacenAgenda.ts` (estado compartido, caché, guardados),
+`src/notificaciones/recordatoriosEventos.ts`, `src/servicios/eventos/`
+(interfaz + mock con la forma `{ datos, meta }` / `{ error }` de la API) y
+`src/mocks/eventos.ts` (fechas relativas a hoy, con los casos feos:
+suspendido, cancelado, finalizado, sin imagen, sin fin, sin precio,
+dirección sin coordenadas, lugar inexistente y un texto larguísimo).
+
+## 📸 Mi recorrido (punto 4 del pedido)
+
+Pestaña **Mi recorrido** (`src/pantallas/MiRecorridoPantalla.tsx`) y
+pantallas en `app/registrar/` y `app/visita/[id].tsx`.
+
+| Pedido de Valeria | Cómo quedó |
+| --- | --- |
+| Registrar que estuvo en un lugar escaneando el QR | «Escanear QR» (`expo-camera`, `CameraView`). Linterna para la noche. |
+| … estando físicamente cerca | «Estoy acá»: GPS de una sola vez (con tope de 15 s); lista los lugares a menos de **150 m**. Si la precisión es peor que ±100 m o no hay señal, lo dice y ofrece elegir a mano. |
+| … o cargándolo a mano | «Elegir lugar» con buscador, ordenado por cercanía si ya hay ubicación. También desde el detalle de cualquier lugar: botón «Registrar visita». Si elegís a mano pero estás al lado, queda registrado como GPS. |
+| Sacar una foto en el lugar asociada a la visita | Cámara propia o galería (`expo-image-picker`). La foto se copia a la carpeta permanente de la app (`expo-file-system`, API nueva `File`/`Directory`/`Paths`). |
+| Escribir una nota corta | Hasta 280 caracteres, con contador. Se puede editar después. |
+| Ver el recorrido completo, en orden, con las fotos | Línea de tiempo numerada, agrupada por día (Hoy, Ayer, …), con foto y nota. Resumen «N lugares · N fotos». |
+| QR que no es nuestro o roto: no romperse ni quedar colgada | `src/recorrido/codigoQr.ts`: un QR ajeno (menú de un bar, Wi-Fi, link) o roto muestra un aviso y la cámara sigue leyendo. A los 15 s aparece «¿No lee? Elegir a mano». Con tests. |
+| La visita se guarda sin señal (`sincronizada: false`) | Todo se guarda primero en **SQLite** (`expo-sqlite`, tabla `visitas` igual al tipo `Visita`) y una cola (`src/recorrido/sincronizador.ts`) la sube cuando vuelve la conexión (`expo-network`), al abrir la app o al volver a primer plano. Si la red se cae a mitad de camino, lo que no subió queda pendiente. La tarjeta muestra «Sin subir». |
+| Vibración al registrar | `expo-haptics`. |
+
+Formato de QR **propuesto** (a confirmar con Valeria): el texto
+`COLON:<id del lugar>`, que es el campo `codigoQr` del catálogo
+(ej. `COLON:lug-004`). También acepta una URL que termine en ese texto o
+con `?qr=COLON:lug-004`, por si prefieren que el QR abra una web.
+
+## Revisión del código existente
+
+Antes de sumar los puntos 3 y 4 se revisó lo que ya estaba. El detalle de
+lo encontrado, lo corregido y lo que queda para decidir en equipo está en
+[`docs/REVISION.md`](docs/REVISION.md).
 
 ### Probar en un iPhone físico con Expo Go
 
@@ -120,12 +160,16 @@ de Expo Go". Si pasa:
   al toque, hay que decidirlo en equipo cuando se organice el build de
   EAS de producción.
 - Mientras tanto, `npm run web` sigue sirviendo para probar todo lo que
-  no sea el mapa (ver limitación de `react-native-maps` más arriba).
+  no sea el mapa (ver limitación de `react-native-maps` más arriba). En
+  web, la Agenda y Mi recorrido funcionan (las visitas se guardan en el
+  navegador); los avisos y la cámara se prueban en el celular.
 
 ### Tests
 
 ```bash
-npm run test
+npm run test        # 59 tests
+npx tsc --noEmit    # tipos
+npm run lint
 ```
 
 ## Get a fresh project
