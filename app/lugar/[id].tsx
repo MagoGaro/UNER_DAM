@@ -66,6 +66,22 @@ export default function DetalleLugarPantalla() {
   // Evaluar horario dinámico en tiempo real
   const estadoHorario = lugar ? evaluarEstadoHorario(lugar) : null;
 
+  // Resumen de horarios agrupaditos por temporada (Verano / Invierno / General)
+  const resumenTemporadas = useMemo(() => {
+    if (!lugar?.horarios || lugar.horarios.length === 0) return [];
+    
+    const mapTemporadas = new Map<string, string>();
+    for (const h of lugar.horarios) {
+      const tempNombre = h.temporada
+        ? h.temporada.charAt(0).toUpperCase() + h.temporada.slice(1).toLowerCase()
+        : 'General';
+      if (!mapTemporadas.has(tempNombre)) {
+        mapTemporadas.set(tempNombre, `${h.abre} a ${h.cierra} hs`);
+      }
+    }
+    return Array.from(mapTemporadas.entries());
+  }, [lugar?.horarios]);
+
   const alternarReproduccion = () => {
     if (!reproductorAudio || !fuenteAudio) return;
 
@@ -129,8 +145,7 @@ export default function DetalleLugarPantalla() {
             </Pressable>
           </View>
 
-          {/* Registrar visita (Mi recorrido, punto 4): la pantalla de confirmación
-              detecta sola si el turista está al lado y lo registra como GPS. */}
+          {/* Registrar visita */}
           <Pressable
             style={estilos.botonRegistrarVisita}
             onPress={() => router.push(rutaConfirmarVisita(lugar.id, 'manual'))}
@@ -178,7 +193,7 @@ export default function DetalleLugarPantalla() {
 
           <Text style={estilos.descripcion}>{lugar.descripcion}</Text>
 
-          {/* Información útil con Badge dinámico Verde / Rojo */}
+          {/* Información útil completa */}
           <View style={estilos.infoBloque}>
             <Text style={estilos.subtitulo}>Información útil</Text>
 
@@ -201,6 +216,7 @@ export default function DetalleLugarPantalla() {
               </Text>
             </View>
 
+            {/* Precio Entrada */}
             {lugar.precioEntrada !== null && (
               <Text style={estilos.textoInfo}>
                 <Ionicons name="ticket-outline" size={16} /> Entrada:{' '}
@@ -208,10 +224,21 @@ export default function DetalleLugarPantalla() {
               </Text>
             )}
 
+            {/* Teléfono */}
             {lugar.telefono && (
               <Pressable onPress={() => Linking.openURL(`tel:${lugar.telefono}`)}>
                 <Text style={[estilos.textoInfo, estilos.enlace]}>
                   <Ionicons name="call-outline" size={16} /> {lugar.telefono}
+                </Text>
+              </Pressable>
+            )}
+
+            {/* Sitio Web */}
+            {lugar.sitioWeb && (
+              <Pressable onPress={() => Linking.openURL(lugar.sitioWeb!)}>
+                <Text style={[estilos.textoInfo, estilos.enlace]}>
+                  <Ionicons name="globe-outline" size={16} />{' '}
+                  {lugar.sitioWeb.replace(/^https?:\/\//, '')}
                 </Text>
               </Pressable>
             )}
@@ -233,6 +260,18 @@ export default function DetalleLugarPantalla() {
                 <Text style={estilos.textoHorarioDinamico}>
                   {estadoHorario.mensaje}
                 </Text>
+              </View>
+            )}
+
+            {/* Horarios por temporada */}
+            {resumenTemporadas.length > 0 && (
+              <View style={estilos.bloqueTemporadas}>
+                <Text style={estilos.subtituloTemporadas}>Horarios de atención:</Text>
+                {resumenTemporadas.map(([temporada, rango]) => (
+                  <Text key={temporada} style={estilos.textoTemporada}>
+                    • {temporada}: {rango}
+                  </Text>
+                ))}
               </View>
             )}
           </View>
@@ -343,5 +382,23 @@ const estilos = StyleSheet.create({
     fontSize: 14,
     color: '#343A40',
     flex: 1,
+  },
+
+  bloqueTemporadas: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    gap: 4,
+  },
+  subtituloTemporadas: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A2530',
+  },
+  textoTemporada: {
+    fontSize: 14,
+    color: '#4A5568',
+    marginLeft: 4,
   },
 });

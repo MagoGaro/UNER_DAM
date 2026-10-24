@@ -1,9 +1,11 @@
+
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import type { Evento } from '@/src/tipos/evento';
-import { formatearHora, desdeISO } from '@/src/utils/fechas';
+import { desdeISO, formatearHora } from '@/src/utils/fechas';
 import { CANAL_AVISOS, pedirPermisoNotificaciones } from './configuracion';
+
 
 /**
  * Recordatorios locales de eventos guardados (expo-notifications). Todo
@@ -20,6 +22,7 @@ export const servicioRecordatoriosExpo: ServicioRecordatorios = {
   async programar(evento, cuando) {
     if (Platform.OS === 'web') return null;
     if (!(await pedirPermisoNotificaciones())) return null;
+
     try {
       const inicio = desdeISO(evento.inicio);
       return await Notifications.scheduleNotificationAsync({
@@ -35,6 +38,7 @@ export const servicioRecordatoriosExpo: ServicioRecordatorios = {
         },
       });
     } catch {
+      // Best-effort: en caso de error en Expo Go no interrumpe el guardado en la agenda
       return null;
     }
   },
@@ -51,6 +55,7 @@ export const servicioRecordatoriosExpo: ServicioRecordatorios = {
   async avisarAhora(titulo, cuerpo, eventoId) {
     if (Platform.OS === 'web') return;
     if (!(await pedirPermisoNotificaciones())) return;
+
     try {
       await Notifications.scheduleNotificationAsync({
         content: { title: titulo, body: cuerpo, data: { tipo: 'evento', eventoId } },
