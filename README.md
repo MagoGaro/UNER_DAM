@@ -139,6 +139,32 @@ Formato de QR **propuesto** (a confirmar con Valeria): el texto
 (ej. `COLON:lug-004`). También acepta una URL que termine en ese texto o
 con `?qr=COLON:lug-004`, por si prefieren que el QR abra una web.
 
+## 👤 Cuenta, favoritos y audioguías (puntos 5 y 6 del pedido)
+
+Todo vive bajo `src/`, con la misma regla de siempre: las pantallas dependen de interfaces y el único archivo que cambia al llegar la API es el `index.ts` de cada servicio.
+
+- `src/sesion/` — estado de la cuenta (`AlmacenSesion`): invitado, bloqueada (espera huella o rostro) y activa. Token en `expo-secure-store` (`tokenStore.ts`), biometría en `biometria.ts`, validaciones de los formularios.
+- `src/favoritos/` — favoritos locales con cola de sincronización y `iniciarCuenta()`, que arranca todo desde `TareasDeFondo`.
+- `src/servicios/auth/`, `src/servicios/favoritos/` — interfaz + mock. Para probar: `lucia@mail.com` / `123456`; un email con «sinred» simula que no hay conexión.
+- `src/servicios/lugares/servicioLugaresConCache.ts` — guarda el catálogo para verlo sin señal.
+- `src/audio/` — descarga de audioguías a `expo-file-system` (`audioguias.ts`) y su hook (`useAudioguiaOffline.ts`). El reproductor está en `app/lugar/[id].tsx`.
+- `src/pantallas/YoPantalla.tsx` — pestaña «Yo»: cuenta, favoritos, avisos de cercanía y «guardar audioguías para usar sin señal».
+- `src/componentes/favoritos/BotonFavorito.tsx` — el corazón del detalle del lugar.
+
+Las decisiones tomadas para cerrar los puntos abiertos del pedido están en [`docs/DECISIONES.md`](docs/DECISIONES.md).
+
+### Generar una build con EAS
+
+```bash
+npm install -g eas-cli
+eas login
+eas init                              # crea el proyecto en la cuenta de Expo y completa app.json
+eas build --profile preview --platform android   # APK para probar
+eas build --profile production                    # build de entrega
+```
+
+`eas.json` ya trae los perfiles `preview` y `production`. Para iPhone hace falta una cuenta de Apple Developer (ver la nota de Expo Go más abajo).
+
 ## Revisión del código existente
 
 Antes de sumar los puntos 3 y 4 se revisó lo que ya estaba. El detalle de
