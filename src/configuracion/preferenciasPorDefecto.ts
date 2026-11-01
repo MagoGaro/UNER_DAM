@@ -1,13 +1,14 @@
 import type { Preferencias } from '@/src/tipos/preferencias';
 
 /**
- * Valores por defecto mientras el Integrante 3 no entregue Preferencias
- * real (Cuenta y Favoritos). Cuando exista, esta parte debe leer las
- * preferencias reales del usuario en vez de esta constante.
+ * Valores por defecto: los usa quien no inició sesión y quien recién se
+ * registra. Con cuenta, las preferencias vienen de `Usuario.preferencias`.
  */
 export const PREFERENCIAS_POR_DEFECTO: Preferencias = {
+  categoriasFavoritas: [],
   avisarProximidad: true,
   radioAvisoMetros: 250,
+  tema: 'sistema',
 };
 
 /**

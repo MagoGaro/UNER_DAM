@@ -20,6 +20,7 @@ import { MapaLugares } from '@/src/componentes/mapa/MapaLugares';
 import { FlechaOrientacion } from '@/src/componentes/orientacion/FlechaOrientacion';
 import { PREFERENCIAS_POR_DEFECTO } from '@/src/configuracion/preferenciasPorDefecto';
 import { useAvisosProximidad } from '@/src/hooks/useAvisosProximidad';
+import { useSesion } from '@/src/sesion';
 import { type LugarCercano, useLugaresCercanos } from '@/src/hooks/useLugaresCercanos';
 import { usePosicionUsuario } from '@/src/hooks/usePosicionUsuario';
 import { rutaDetalleLugar } from '@/src/navegacion/rutas';
@@ -42,6 +43,8 @@ export function InicioPantalla() {
   const { estado: estadoPosicion, posicion, precisionMetros, reintentar: reintentarPosicion } =
     usePosicionUsuario();
 
+  const { usuario } = useSesion();
+
   const { lugares, estado: estadoLugares, reintentar: reintentarLugares } = useLugaresCercanos(
     posicion,
     categoriaSeleccionada
@@ -51,7 +54,7 @@ export function InicioPantalla() {
     lugares,
     posicion,
     precisionMetros,
-    preferencias: PREFERENCIAS_POR_DEFECTO,
+    preferencias: usuario?.preferencias ?? PREFERENCIAS_POR_DEFECTO,
   });
 
   const lugaresFiltrados = useMemo(() => {

@@ -1,5 +1,5 @@
-import { PantallaPendiente } from '@/src/componentes/estados/PantallaPendiente';
+import { YoPantalla } from '@/src/pantallas/YoPantalla';
 
 export default function YoScreen() {
-  return <PantallaPendiente titulo="Yo" responsable="Integrante 3: Cuenta y Favoritos" icono="person" />;
+  return <YoPantalla />;
 }

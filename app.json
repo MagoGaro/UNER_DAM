@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "grupo_44",
+    "name": "Mi Ciudad Colón",
     "slug": "grupo_44",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,7 +9,13 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.grupo44.miciudadcolon",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "audio"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +25,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.grupo44.miciudadcolon"
     },
     "web": {
       "output": "static",
@@ -46,7 +53,13 @@
         }
       ],
       "expo-notifications",
-      "expo-audio",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
       [
         "expo-camera",
         {
@@ -63,7 +76,14 @@
           "microphonePermission": false
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Mi Ciudad Colón usa Face ID para que entres a tu cuenta sin escribir la contraseña."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

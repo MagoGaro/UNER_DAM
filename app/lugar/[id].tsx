@@ -10,6 +10,14 @@ import { abrirEnMapaExterno } from '@/src/utils/geo';
 import type { Lugar } from '@/src/tipos/lugar';
 import { servicioLugares } from '@/src/servicios/lugares';
 import { rutaConfirmarVisita } from '@/src/navegacion/rutas';
+import { useAudioguiaOffline } from '@/src/audio/useAudioguiaOffline';
+import { BotonFavorito } from '@/src/componentes/favoritos/BotonFavorito';
+
+function nombreIdioma(idioma: string): string {
+  if (idioma === 'en') return 'inglés';
+  if (idioma === 'pt') return 'portugués';
+  return 'español';
+}
 
 function formatearTiempo(segundos: number): string {
   if (!segundos || isNaN(segundos)) return '0:00';
@@ -25,7 +33,8 @@ export default function DetalleLugarPantalla() {
 
   // Configurar modo de audio de Expo
   useEffect(() => {
-    setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
+    // shouldPlayInBackground: la audioguía sigue con el celular en el bolsillo y la pantalla apagada.
+    setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true, interruptionMode: 'doNotMix' }).catch(() => {});
   }, []);
 
   // Cargar datos del lugar de forma asíncrona
@@ -40,15 +49,8 @@ export default function DetalleLugarPantalla() {
     cargarDetalle();
   }, [id]);
 
-  const fuenteAudio = useMemo(() => {
-    if (lugar?.id === 'lug-004') {
-      return require('@/assets/audio/molino_forclaz.mp3');
-    }
-    if (lugar?.audioguia?.url) {
-      return { uri: lugar.audioguia.url };
-    }
-    return null;
-  }, [lugar?.id, lugar?.audioguia?.url]);
+  const audioOffline = useAudioguiaOffline(lugar);
+  const fuenteAudio = audioOffline.fuente;
 
   const reproductorAudio = useAudioPlayer(fuenteAudio);
   const estadoAudio = useAudioPlayerStatus(reproductorAudio);
@@ -92,6 +94,28 @@ export default function DetalleLugarPantalla() {
         reproductorAudio.seekTo(0);
       }
       reproductorAudio.play();
+      try {
+        reproductorAudio.setActiveForLockScreen(
+          true,
+          { title: lugar?.nombre ?? 'Audioguía', artist: 'Mi Ciudad Colón', albumTitle: 'Audioguías de Colón' },
+          { showSeekBackward: true, showSeekForward: true }
+        );
+      } catch {
+        // Sin controles en la pantalla de bloqueo: igual se escucha.
+      }
+    }
+  };
+
+  const duracionTotal = estadoAudio.duration || lugar?.audioguia?.duracionSegundos || 0;
+  const avance = duracionTotal > 0 ? Math.min(estadoAudio.currentTime / duracionTotal, 1) : 0;
+
+  const saltar = (segundos: number) => {
+    if (!reproductorAudio || !fuenteAudio) return;
+    const destino = Math.min(Math.max(estadoAudio.currentTime + segundos, 0), duracionTotal || Number.MAX_SAFE_INTEGER);
+    try {
+      reproductorAudio.seekTo(destino);
+    } catch {
+      // El reproductor todavía no cargó: no pasa nada.
     }
   };
 
@@ -113,7 +137,13 @@ export default function DetalleLugarPantalla() {
 
   return (
     <SafeAreaView style={estilos.contenedor} edges={['bottom']}>
-      <Stack.Screen options={{ title: lugar.nombre, headerBackTitle: 'Atrás' }} />
+      <Stack.Screen
+        options={{
+          title: lugar.nombre,
+          headerBackTitle: 'Atrás',
+          headerRight: () => <BotonFavorito lugarId={lugar.id} nombre={lugar.nombre} />,
+        }}
+      />
       <ScrollView contentContainerStyle={estilos.scroll}>
         <Image
           source={{ uri: lugar.imagenes[0] || lugar.imagenUrl }}
@@ -155,39 +185,88 @@ export default function DetalleLugarPantalla() {
             <Text style={estilos.textoRegistrarVisita}>Registrar visita</Text>
           </Pressable>
 
-          {/* Reproductor de Audioguía Reactivo */}
+          {/* Reproductor de audioguía: pausa, adelantar/retroceder, cuánto falta y uso sin señal */}
           {lugar.audioguia && (
             <View style={estilos.tarjetaAudio}>
               <View style={estilos.encabezadoAudio}>
                 <Ionicons name="headset" size={20} color="#5C4A00" />
-                <Text style={estilos.tituloAudio}>
-                  Audioguía en {lugar.audioguia.idioma === 'es' ? 'español' : 'inglés'}
-                </Text>
+                <Text style={estilos.tituloAudio}>Audioguía en {nombreIdioma(lugar.audioguia.idioma)}</Text>
               </View>
 
-              <Pressable style={estilos.botonAudio} onPress={alternarReproduccion}>
-                <Ionicons
-                  name={estadoAudio.playing ? 'pause' : 'play'}
-                  size={22}
-                  color="#fff"
-                />
+              <Pressable
+                style={estilos.botonAudio}
+                onPress={alternarReproduccion}
+                accessibilityRole="button"
+                accessibilityLabel={estadoAudio.playing ? 'Pausar audioguía' : 'Escuchar audioguía'}
+              >
+                <Ionicons name={estadoAudio.playing ? 'pause' : 'play'} size={22} color="#fff" />
                 <Text style={estilos.textoBotonAudio}>
                   {estadoAudio.playing ? 'Pausar relato' : 'Escuchar relato'}
                 </Text>
               </Pressable>
 
-              {/* Tiempo y estado del relato */}
+              <View style={estilosAudio.fila}>
+                <Pressable
+                  style={estilosAudio.salto}
+                  onPress={() => saltar(-15)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Retroceder 15 segundos"
+                >
+                  <Ionicons name="play-back" size={20} color="#5C4A00" />
+                  <Text style={estilosAudio.textoSalto}>15 s</Text>
+                </Pressable>
+                <View
+                  style={estilosAudio.barra}
+                  accessibilityRole="progressbar"
+                  accessibilityValue={{ min: 0, max: 100, now: Math.round(avance * 100) }}
+                >
+                  <View style={[estilosAudio.barraAvance, { width: `${Math.round(avance * 100)}%` }]} />
+                </View>
+                <Pressable
+                  style={estilosAudio.salto}
+                  onPress={() => saltar(15)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Adelantar 15 segundos"
+                >
+                  <Text style={estilosAudio.textoSalto}>15 s</Text>
+                  <Ionicons name="play-forward" size={20} color="#5C4A00" />
+                </Pressable>
+              </View>
+
               <View style={estilos.infoTiempo}>
                 <Text style={estilos.textoTiempo}>
-                  {formatearTiempo(estadoAudio.currentTime)} /{' '}
-                  {formatearTiempo(
-                    estadoAudio.duration || lugar.audioguia.duracionSegundos
-                  )}
+                  {formatearTiempo(estadoAudio.currentTime)} / {formatearTiempo(duracionTotal)}
                 </Text>
                 <Text style={estilos.estadoTexto}>
-                  {estadoAudio.playing ? 'Reproduciendo relato...' : 'Pausado'}
+                  Faltan {formatearTiempo(Math.max(duracionTotal - estadoAudio.currentTime, 0))}
                 </Text>
               </View>
+
+              {audioOffline.estado === 'incluida' && (
+                <Text style={estilosAudio.nota}>✓ Incluida en la app: funciona sin señal.</Text>
+              )}
+              {audioOffline.estado === 'descargada' && (
+                <View style={estilosAudio.filaOffline}>
+                  <Text style={estilosAudio.nota}>✓ Guardada en tu teléfono: funciona sin señal.</Text>
+                  <Pressable onPress={audioOffline.quitar} accessibilityRole="button" style={estilosAudio.botonChico}>
+                    <Text style={estilosAudio.textoBotonChico}>Quitar</Text>
+                  </Pressable>
+                </View>
+              )}
+              {(audioOffline.estado === 'no-descargada' || audioOffline.estado === 'descargando') && (
+                <Pressable
+                  onPress={audioOffline.descargar}
+                  disabled={audioOffline.estado === 'descargando'}
+                  accessibilityRole="button"
+                  style={[estilosAudio.botonDescarga, audioOffline.estado === 'descargando' && { opacity: 0.6 }]}
+                >
+                  <Ionicons name="download-outline" size={20} color="#5C4A00" />
+                  <Text style={estilosAudio.textoBotonChico}>
+                    {audioOffline.estado === 'descargando' ? 'Descargando…' : 'Guardar para usar sin señal'}
+                  </Text>
+                </Pressable>
+              )}
+              {audioOffline.error && <Text style={estilosAudio.error}>{audioOffline.error}</Text>}
             </View>
           )}
 
@@ -401,4 +480,27 @@ const estilos = StyleSheet.create({
     color: '#4A5568',
     marginLeft: 4,
   },
+});
+const estilosAudio = StyleSheet.create({
+  fila: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
+  salto: { minHeight: 48, minWidth: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
+  textoSalto: { fontSize: 14, fontWeight: '800', color: '#5C4A00' },
+  barra: { flex: 1, height: 8, borderRadius: 4, backgroundColor: '#E9DFA8', overflow: 'hidden' },
+  barraAvance: { height: 8, backgroundColor: '#C2410C' },
+  nota: { flex: 1, marginTop: 10, fontSize: 14, fontWeight: '700', color: '#1B5E20' },
+  filaOffline: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  botonChico: { minHeight: 44, paddingHorizontal: 12, justifyContent: 'center' },
+  botonDescarga: {
+    minHeight: 48,
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#5C4A00',
+  },
+  textoBotonChico: { fontSize: 15, fontWeight: '800', color: '#5C4A00' },
+  error: { marginTop: 8, fontSize: 14, fontWeight: '700', color: '#B3261E' },
 });
