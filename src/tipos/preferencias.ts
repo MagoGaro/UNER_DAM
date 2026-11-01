@@ -2,13 +2,12 @@
 export const RADIOS_AVISO_METROS = [100, 250, 500] as const;
 export type RadioAvisoMetros = (typeof RADIOS_AVISO_METROS)[number];
 
-/**
- * Preferencias del usuario relevantes para esta parte. El resto de
- * Preferencias (idioma, favoritos, etc.) lo define el Integrante 3 junto
- * con Cuenta y Favoritos; mientras no exista, se usan los valores por
- * defecto de `./preferenciasPorDefecto`.
- */
+export type TemaApp = 'claro' | 'oscuro' | 'sistema';
+
+/** Tal cual el pedido de Valeria (página 10). */
 export interface Preferencias {
+  categoriasFavoritas: string[];
   avisarProximidad: boolean;
   radioAvisoMetros: RadioAvisoMetros;
+  tema: TemaApp;
 }

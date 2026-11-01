@@ -1,5 +1,5 @@
-import { obtenerUsuarioId } from '@/src/almacenamiento/usuarioLocal';
 import { hayConexionAhora } from '@/src/hooks/useConexion';
+import { usuarioIdActual } from '@/src/sesion';
 import { repositorioVisitas, servicioVisitasApi } from '@/src/servicios/visitas';
 import { crearRecorrido, type Recorrido } from './almacenRecorrido';
 import { borrarFoto, guardarFotoPermanente } from './fotos';
@@ -10,7 +10,7 @@ export { LARGO_MAXIMO_NOTA } from './almacenRecorrido';
 export const recorrido: Recorrido = crearRecorrido({
   repo: repositorioVisitas,
   api: servicioVisitasApi,
-  usuarioId: () => obtenerUsuarioId(),
+  usuarioId: () => usuarioIdActual(),
   hayConexion: hayConexionAhora,
   guardarFoto: guardarFotoPermanente,
   borrarFoto,

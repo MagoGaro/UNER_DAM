@@ -2,6 +2,8 @@ export * from './api';
 export * from './categoria';
 export * from './coordenadas';
 export * from './evento';
+export * from './favorito';
 export * from './lugar';
 export * from './preferencias';
+export * from './usuario';
 export * from './visita';

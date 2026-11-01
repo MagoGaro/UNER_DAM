@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { AppState, Platform } from 'react-native';
 
 import { agenda } from '@/src/agenda/almacenAgenda';
+import { favoritos, iniciarCuenta } from '@/src/favoritos';
 import { estaConectado } from '@/src/hooks/useConexion';
 import { configurarNotificaciones } from '@/src/notificaciones/configuracion';
 import { rutaDetalleEvento, rutaDetalleLugar } from '@/src/navegacion/rutas';
@@ -12,7 +13,7 @@ import { recorrido } from '@/src/recorrido';
 
 /**
  * Se monta una sola vez en app/_layout.tsx y no dibuja nada:
- * - configura las notificaciones locales;
+ * - configura las notificaciones locales y arranca la cuenta (sesión y favoritos);
  * - al abrir la app y al volver a primer plano, actualiza la agenda
  *   (así se detecta si un evento guardado se suspendió) y sube la cola
  *   de visitas pendientes;
@@ -22,9 +23,11 @@ import { recorrido } from '@/src/recorrido';
 export function TareasDeFondo() {
   useEffect(() => {
     configurarNotificaciones();
+    const bajaCuenta = iniciarCuenta();
 
     const refrescar = () => {
       agenda.cargarEventos().catch(() => {});
+      favoritos.sincronizar().catch(() => {});
       recorrido
         .recargar()
         .then(() => recorrido.sincronizar())
@@ -57,6 +60,7 @@ export function TareasDeFondo() {
     }
 
     return () => {
+      bajaCuenta();
       subApp.remove();
       subRed.remove();
       subNotif?.remove();
