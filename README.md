@@ -1,3 +1,17 @@
+# Mi Ciudad Colón — Grupo 44
+
+## Cómo probar y colaborar (leer primero)
+
+Todo el trabajo de los puntos 1 a 6 del pedido está en `main`. Para tener la última versión: `git checkout main` y `git pull`. Después `npm install` (hay paquetes nuevos: expo-secure-store, expo-local-authentication y expo-sensors) y `npx expo start`. Escaneá el QR con Expo Go (Android) o con la cámara (iPhone). Si no conecta, usá `npx expo start --tunnel`.
+
+Cuenta de prueba: `lucia@mail.com` con contraseña `123456`. Un email que contenga "sinred" simula que no hay conexión.
+
+Para trabajar en equipo: no se commitea directo a `main`. Cada tarea va en su rama (`git checkout -b nombre-de-la-tarea`), se sube con `git push -u origin nombre-de-la-tarea` y se abre un PR hacia `main`. Otro integrante lo revisa antes de fusionarlo. Antes de abrir el PR tienen que pasar sin errores `npx tsc --noEmit`, `npm run lint` y `npm test`. No subir `node_modules` ni claves o tokens.
+
+Lo que no se puede probar en Expo Go: la audioguía con la pantalla apagada con sus controles en la pantalla de bloqueo, y Face ID en iPhone. Para eso hace falta una build con EAS (ver más abajo). Las decisiones tomadas y la lista de pruebas pendientes en Android e iPhone están en docs/DECISIONES.md.
+
+Pendiente del equipo: correr `eas init` con la cuenta de Expo del grupo, confirmar el identificador de la app (com.grupo44.miciudadcolon), sumar la clave de Google Maps para la build de Android y conectar los servicios reales cuando la cátedra publique la API (archivos src/servicios/*/index.ts).
+
 # Welcome to your Expo app 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
