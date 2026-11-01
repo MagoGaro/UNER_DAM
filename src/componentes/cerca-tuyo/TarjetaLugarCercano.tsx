@@ -1,170 +1,159 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { StyleSheet, Text, View, Pressable } from 'react-native';
 import { Image } from 'expo-image';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
-import type { LugarCercano } from '@/src/hooks/useLugaresCercanos';
-import { abrirComoLlegar, type ModoViaje } from '@/src/navegacion/abrirComoLlegar';
 import { obtenerMetadatoCategoria } from '@/src/tipos/categoria';
+import type { LugarCercano } from '@/src/hooks/useLugaresCercanos';
 
 interface TarjetaLugarCercanoProps {
   lugar: LugarCercano;
   onVerDetalle: (lugar: LugarCercano) => void;
 }
 
-function colorDistancia(metros: number | null): string {
-  if (metros === null) return '#868E96';
-  if (metros < 1000) return '#2F9E44';
-  if (metros < 3000) return '#F08C00';
-  return '#495057';
-}
-
-/**
- * Tarjeta de la lista «Cerca tuyo»: foto, puntaje, distancia y «Cómo
- * llegar» (tareas 4 y 5). El botón «ver detalle» y los de «cómo llegar»
- * son hermanos, no uno anidado dentro del otro: un botón dentro de otro
- * botón es HTML inválido (se ve en la consola web) y en la práctica
- * hace que el clic interno dispare también el externo.
- */
 export function TarjetaLugarCercano({ lugar, onVerDetalle }: TarjetaLugarCercanoProps) {
-  const metadato = obtenerMetadatoCategoria(lugar.categoria);
-
-  async function comoLlegar(modo: ModoViaje) {
-    const abierto = await abrirComoLlegar(lugar.coordenadas, modo);
-    if (!abierto) {
-      Alert.alert('No se pudo abrir el mapa', 'Instalá Google Maps o Apple Maps para trazar la ruta.');
-    }
-  }
+  // El catálogo trae `categoriaId` ("cat-museos"); `categoria` es opcional y
+  // los mocks no lo cargan, por eso antes todas las tarjetas decían "Lugar".
+  const metadato = obtenerMetadatoCategoria(lugar.categoriaId ?? lugar.categoria);
+  const colorChip = metadato.color;
+  const etiquetaCategoria = metadato.etiqueta;
 
   return (
-    <View style={styles.tarjeta}>
-      <TouchableOpacity
-        onPress={() => onVerDetalle(lugar)}
-        accessibilityRole="button"
-        accessibilityLabel={`Ver detalle de ${lugar.nombre}`}
-        style={styles.filaPrincipal}>
-        {lugar.imagenUrl ? (
-          <Image source={{ uri: lugar.imagenUrl }} style={styles.imagen} contentFit="cover" />
-        ) : (
-          <View style={[styles.imagen, styles.imagenAusente, { backgroundColor: metadato.color }]}>
-            <Ionicons name={metadato.icono} size={26} color="#fff" />
-          </View>
-        )}
-
-        <View style={styles.info}>
+    <Pressable style={styles.tarjeta} onPress={() => onVerDetalle(lugar)}>
+      <Image
+        source={{ uri: lugar.imagenes[0] ?? lugar.imagenUrl }}
+        style={styles.imagen}
+        contentFit="cover"
+        cachePolicy="disk"
+      />
+      <View style={styles.contenido}>
+        <View style={styles.encabezado}>
           <Text style={styles.nombre} numberOfLines={1}>
             {lugar.nombre}
           </Text>
+          <View style={[styles.badge, { backgroundColor: colorChip }]}>
+            <Text style={styles.badgeTexto}>{etiquetaCategoria}</Text>
+          </View>
+        </View>
 
-          {lugar.calificacion !== undefined ? (
-            <View style={styles.filaCalificacion}>
-              <Ionicons name="star" size={13} color="#F59F00" />
-              <Text style={styles.calificacion}>{lugar.calificacion.toFixed(1)}</Text>
-            </View>
-          ) : null}
+        <Text style={styles.descripcion} numberOfLines={2}>
+          {lugar.descripcionCorta}
+        </Text>
 
-          {lugar.descripcionCorta ? (
-            <Text style={styles.descripcion} numberOfLines={2}>
-              {lugar.descripcionCorta}
+        {/* Fila inferior: Distancia e indicador de accesibilidad (Si / No) */}
+        <View style={styles.pieTarjeta}>
+          {lugar.distanciaFormateada ? (
+            <Text style={styles.distancia}>
+              <Ionicons name="navigate-outline" size={12} /> {lugar.distanciaFormateada}
             </Text>
-          ) : null}
-        </View>
-      </TouchableOpacity>
+          ) : (
+            <View />
+          )}
 
-      <View style={styles.acciones}>
-        <TouchableOpacity
-          onPress={() => comoLlegar('caminando')}
-          accessibilityRole="button"
-          accessibilityLabel={`Cómo llegar a pie a ${lugar.nombre}`}
-          style={styles.botonAccion}>
-          <Ionicons name="walk" size={16} color="#339AF0" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => comoLlegar('auto')}
-          accessibilityRole="button"
-          accessibilityLabel={`Cómo llegar en auto a ${lugar.nombre}`}
-          style={styles.botonAccion}>
-          <Ionicons name="car" size={16} color="#339AF0" />
-        </TouchableOpacity>
+          <View
+            style={[
+              styles.chipAccesible,
+              lugar.accesible ? styles.chipSi : styles.chipNo,
+            ]}
+          >
+            <MaterialIcons
+              name="accessible"
+              size={12}
+              color={lugar.accesible ? '#2E9E4C' : '#E03131'}
+            />
+            <Text
+              style={[
+                styles.textoChipAccesible,
+                { color: lugar.accesible ? '#2E9E4C' : '#E03131' },
+              ]}
+            >
+              {lugar.accesible ? 'Accesible' : 'No accesible'}
+            </Text>
+          </View>
+        </View>
       </View>
-
-      {lugar.distanciaFormateada ? (
-        <View style={[styles.badgeDistancia, { backgroundColor: colorDistancia(lugar.distanciaMetros) }]}>
-          <Text style={styles.badgeTexto}>{lugar.distanciaFormateada}</Text>
-        </View>
-      ) : null}
-    </View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   tarjeta: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 10,
-    marginHorizontal: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  filaPrincipal: {
     flexDirection: 'row',
-    gap: 10,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
   },
   imagen: {
-    width: 76,
-    height: 76,
-    borderRadius: 10,
+    width: 100,
+    height: 100,
   },
-  imagenAusente: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  info: {
+  contenido: {
     flex: 1,
-    gap: 2,
-    paddingRight: 60,
+    padding: 10,
+    justifyContent: 'space-between',
   },
-  nombre: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#212529',
-  },
-  filaCalificacion: {
+  encabezado: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     gap: 4,
   },
-  calificacion: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#495057',
+  nombre: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#1A2530',
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  badgeTexto: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   descripcion: {
     fontSize: 12,
-    color: '#868E96',
+    color: '#5C6B7A',
+    marginVertical: 4,
   },
-  acciones: {
+  pieTarjeta: {
     flexDirection: 'row',
-    gap: 4,
-    marginTop: 4,
-    marginLeft: 86,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 2,
   },
-  botonAccion: {
-    padding: 4,
+  distancia: {
+    fontSize: 12,
+    color: '#0B5394',
+    fontWeight: '600',
   },
-  badgeDistancia: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
+  chipAccesible: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
   },
-  badgeTexto: {
-    fontSize: 11,
+  chipSi: {
+    backgroundColor: '#E6FCF5',
+    borderColor: '#B2F2BB',
+  },
+  chipNo: {
+    backgroundColor: '#FFF5F5',
+    borderColor: '#FFC9C9',
+  },
+  textoChipAccesible: {
+    fontSize: 10,
     fontWeight: '700',
-    color: '#fff',
   },
 });

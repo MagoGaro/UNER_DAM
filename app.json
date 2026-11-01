@@ -45,7 +45,25 @@
           "locationWhenInUsePermission": "Mi Ciudad Colón usa tu ubicación para mostrarte en el mapa los lugares cercanos y avisarte cuando llegás a uno."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      "expo-audio",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Mi Ciudad Colón usa la cámara para leer el código QR de los carteles y sacar la foto de tu visita.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Mi Ciudad Colón te deja elegir una foto que ya sacaste para sumarla a tu recorrido.",
+          "cameraPermission": "Mi Ciudad Colón usa la cámara para sacar la foto de tu visita.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,

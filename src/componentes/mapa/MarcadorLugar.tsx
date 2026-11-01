@@ -16,7 +16,9 @@ interface MarcadorLugarProps {
  * clásica de un mapa, más liviano y consistente entre Android/iOS.
  */
 export function MarcadorLugar({ lugar, onVerDetalle }: MarcadorLugarProps) {
-  const metadato = obtenerMetadatoCategoria(lugar.categoria);
+  // Se usa `categoriaId` (siempre presente); antes se leía `categoria`, que
+  // los mocks no cargan, y todos los pines quedaban del mismo color.
+  const metadato = obtenerMetadatoCategoria(lugar.categoriaId ?? lugar.categoria);
 
   return (
     <Marker

@@ -1,5 +1,5 @@
-import { PantallaPendiente } from '@/src/componentes/estados/PantallaPendiente';
+import { MiRecorridoPantalla } from '@/src/pantallas/MiRecorridoPantalla';
 
 export default function MiRecorridoScreen() {
-  return <PantallaPendiente titulo="Mi recorrido" responsable="Integrante 4" icono="location" />;
+  return <MiRecorridoPantalla />;
 }

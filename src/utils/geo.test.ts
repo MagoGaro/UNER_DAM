@@ -1,4 +1,20 @@
-import { distanciaMetros, formatearDistancia, rumboGrados } from './geo';
+import { describe, it, expect, jest } from '@jest/globals';
+import { Linking } from 'react-native';
+import {
+  distanciaMetros,
+  formatearDistancia,
+  rumboGrados,
+  abrirEnMapaExterno,
+} from './geo';
+
+// Mock de react-native para probar la apertura de mapas nativos en Android/iOS
+jest.mock('react-native', () => ({
+  Platform: { select: jest.fn((objs: any) => objs.android) },
+  Linking: {
+    canOpenURL: jest.fn().mockResolvedValue(true as never),
+    openURL: jest.fn(),
+  },
+}));
 
 describe('distanciaMetros', () => {
   it('da 0 para el mismo punto', () => {
@@ -46,5 +62,12 @@ describe('formatearDistancia', () => {
   it('usa kilómetros con coma decimal a partir de 1 km', () => {
     expect(formatearDistancia(1400)).toBe('1,4 km');
     expect(formatearDistancia(1000)).toBe('1,0 km');
+  });
+});
+
+describe('abrirEnMapaExterno', () => {
+  it('llama a Linking.openURL con el esquema de mapas', async () => {
+    abrirEnMapaExterno(-32.2178, -58.1354, 'Termas Colón');
+    expect(Linking.canOpenURL).toHaveBeenCalled();
   });
 });

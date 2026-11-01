@@ -1,5 +1,5 @@
-import { PantallaPendiente } from '@/src/componentes/estados/PantallaPendiente';
+import { AgendaPantalla } from '@/src/pantallas/AgendaPantalla';
 
 export default function AgendaScreen() {
-  return <PantallaPendiente titulo="Agenda" responsable="Integrante 3" icono="calendar" />;
+  return <AgendaPantalla />;
 }
