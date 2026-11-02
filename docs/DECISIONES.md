@@ -28,3 +28,7 @@ distinto, cada uno indica el único lugar que hay que tocar.
 - [ ] Probar con la letra del teléfono agrandada y negando cada permiso.
 - [ ] `eas init` con la cuenta de Expo del grupo y luego `eas build --profile preview`.
 - [ ] Reemplazar los servicios de prueba (`src/servicios/*/index.ts`) por los de la API cuando la cátedra la publique.
+
+## Avisos esperados en Expo Go
+
+- **«expo-notifications: Android Push notifications … was removed from Expo Go»**: aparece solo en desarrollo dentro de Expo Go. La app usa únicamente notificaciones locales, que funcionan igual, y en una build de EAS no existe. Se silencia en `src/utils/silenciarAvisoExpoGo.ts`, que se importa primero desde `index.ts` (el archivo de entrada, referido en `package.json`).
