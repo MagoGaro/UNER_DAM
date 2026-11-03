@@ -34,9 +34,11 @@ export class ServicioFavoritosDePrueba implements ServicioFavoritos {
     return { datos: nuevo, meta: null };
   }
 
-  async quitar(favoritoId: string): Promise<RespuestaApi<null>> {
+  async quitar(usuarioId: string, lugarId: string): Promise<RespuestaApi<null>> {
     await esperar(this.demoraMs / 2);
-    this.datos.delete(favoritoId);
+    for (const [id, f] of this.datos) {
+      if (f.usuarioId === usuarioId && f.lugarId === lugarId) this.datos.delete(id);
+    }
     return { datos: null, meta: null };
   }
 }
