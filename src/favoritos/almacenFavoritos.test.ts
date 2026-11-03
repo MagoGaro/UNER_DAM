@@ -23,9 +23,9 @@ function conRedIntermitente() {
       if (!estado.hayRed) throw new ErrorDeServicio('SIN_RED', 'sin red');
       return base.agregar(u, l);
     },
-    quitar: async (id) => {
+    quitar: async (u, l) => {
       if (!estado.hayRed) throw new ErrorDeServicio('SIN_RED', 'sin red');
-      return base.quitar(id);
+      return base.quitar(u, l);
     },
   };
   return { estado, servicio, base };

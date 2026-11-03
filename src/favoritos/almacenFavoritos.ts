@@ -10,7 +10,7 @@ export interface InstantaneaFavoritos {
   sincronizando: boolean;
 }
 
-type Pendiente = { tipo: 'agregar'; lugarId: string } | { tipo: 'quitar'; favoritoId: string; lugarId: string };
+type Pendiente = { tipo: 'agregar'; lugarId: string } | { tipo: 'quitar'; lugarId: string };
 
 const CLAVE_LISTA = 'favoritos.lista';
 const CLAVE_PENDIENTES = 'favoritos.pendientes';
@@ -132,10 +132,10 @@ export class AlmacenFavoritos {
 
   private async quitarEnServidor(fav: Favorito): Promise<void> {
     try {
-      const r = await this.deps.servicio.quitar(fav.id);
+      const r = await this.deps.servicio.quitar(fav.usuarioId, fav.lugarId);
       if (esError(r)) throw new Error(r.error.codigo);
     } catch {
-      this.pendientes.push({ tipo: 'quitar', favoritoId: fav.id, lugarId: fav.lugarId });
+      this.pendientes.push({ tipo: 'quitar', lugarId: fav.lugarId });
     }
   }
 
@@ -194,9 +194,10 @@ export class AlmacenFavoritos {
         try {
           if (p.tipo === 'agregar') {
             const r = await this.deps.servicio.agregar(usuarioId, p.lugarId);
-            if (esError(r)) throw new Error(r.error.codigo);
+            // Un lugar que ya no existe en el servidor no se va a poder guardar nunca: se descarta.
+            if (esError(r) && r.error.codigo !== 'LUGAR_NO_ENCONTRADO') throw new Error(r.error.codigo);
           } else {
-            const r = await this.deps.servicio.quitar(p.favoritoId);
+            const r = await this.deps.servicio.quitar(usuarioId, p.lugarId);
             if (esError(r)) throw new Error(r.error.codigo);
           }
         } catch {

@@ -1,5 +1,5 @@
 import type { Horario, Lugar } from '@/src/tipos/lugar';
-import { evaluarEstadoHorario } from './horarios';
+import { evaluarEstadoHorario, resumenSemanal } from './horarios';
 
 function lugarCon(horarios: Horario[], extra: Partial<Lugar> = {}): Lugar {
   return {
@@ -84,5 +84,44 @@ describe('evaluarEstadoHorario', () => {
   it('un lugar dado de baja figura cerrado', () => {
     const h: Horario[] = [{ dia: 4, abre: '00:00', cierra: '23:59' }];
     expect(evaluarEstadoHorario(lugarCon(h, { activo: false }), juevesOctubre(10)).abierto).toBe(false);
+  });
+});
+
+describe('resumenSemanal', () => {
+  const h = (dia: Horario['dia'], abre: string, cierra: string, temporada?: Horario['temporada']): Horario => ({
+    dia,
+    abre,
+    cierra,
+    temporada,
+  });
+
+  it('junta los días seguidos con el mismo horario y marca los cerrados', () => {
+    const horarios = [h(2, '09:00', '19:00'), h(3, '09:00', '19:00'), h(4, '09:00', '19:00'), h(6, '10:00', '20:00')];
+    const [grupo] = resumenSemanal(horarios);
+    expect(grupo.titulo).toBe('General');
+    expect(grupo.lineas).toEqual([
+      { dias: 'Lun', texto: 'Cerrado' },
+      { dias: 'Mar a Jue', texto: '09:00 a 19:00 hs' },
+      { dias: 'Vie', texto: 'Cerrado' },
+      { dias: 'Sáb', texto: '10:00 a 20:00 hs' },
+      { dias: 'Dom', texto: 'Cerrado' },
+    ]);
+  });
+
+  it('un lugar que abre mañana y tarde muestra los dos tramos en orden', () => {
+    const horarios = [1, 2, 3, 4, 5, 6, 0].flatMap((d) => [h(d as Horario['dia'], '16:00', '20:00'), h(d as Horario['dia'], '09:00', '13:00')]);
+    const [grupo] = resumenSemanal(horarios);
+    expect(grupo.lineas).toEqual([{ dias: 'Lun a Dom', texto: '09:00 a 13:00 hs y 16:00 a 20:00 hs' }]);
+  });
+
+  it('dos días seguidos se leen «Sáb y Dom» y un tramo que cruza la medianoche se muestra tal cual', () => {
+    const [grupo] = resumenSemanal([h(6, '20:30', '01:00'), h(0, '20:30', '01:00')]);
+    expect(grupo.lineas.at(-1)).toEqual({ dias: 'Sáb y Dom', texto: '20:30 a 01:00 hs' });
+  });
+
+  it('separa por temporada y no rompe sin horarios', () => {
+    const grupos = resumenSemanal([h(1, '09:00', '18:00', 'Verano'), h(1, '10:00', '17:00', 'Invierno')]);
+    expect(grupos.map((g) => g.titulo)).toEqual(['Verano', 'Invierno']);
+    expect(resumenSemanal([])).toEqual([]);
   });
 });

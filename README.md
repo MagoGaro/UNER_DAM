@@ -167,6 +167,16 @@ Todo vive bajo `src/`, con la misma regla de siempre: las pantallas dependen de 
 
 Las decisiones tomadas para cerrar los puntos abiertos del pedido están en [`docs/DECISIONES.md`](docs/DECISIONES.md).
 
+### Conectar con la API de Mi Ciudad
+
+La app puede usar la API de la cátedra (`api-mi-ciudad`, con SQLite, PostgreSQL, MySQL o MariaDB según cómo se levante). Sin configurar nada usa datos de prueba. Para usar la API:
+
+1. Levantarla (README de la API): `docker compose up`, o `pnpm install`, `pnpm db:reiniciar` y `pnpm dev` con Node 24.
+2. Copiar `.env.example` a `.env.local` y poner la IP de la computadora donde corre la API, por ejemplo `EXPO_PUBLIC_API_URL=http://192.168.0.10:3000` (desde el celular no sirve `localhost`; misma red wifi).
+3. Reiniciar con `npx expo start -c`.
+
+Cuentas de la API para probar: `lucia@mail.com` / `lucia1234`. Los detalles de cómo se conectó cada parte están en [`docs/DECISIONES.md`](docs/DECISIONES.md).
+
 ### Generar una build con EAS
 
 ```bash

@@ -19,3 +19,20 @@ describe('obtenerMetadatoCategoria', () => {
     expect(obtenerMetadatoCategoria('cat-inexistente').categoria).toBe('otro');
   });
 });
+
+describe('categorías de la API', () => {
+  it('reconoce todas las categorías del catálogo de la API', () => {
+    for (const [id, clave] of [
+      ['cat-playas', 'playa'],
+      ['cat-termas', 'termas'],
+      ['cat-museos', 'museo'],
+      ['cat-gastronomia', 'gastronomia'],
+      ['cat-artesanias', 'artesanias'],
+      ['cat-naturaleza', 'naturaleza'],
+      ['cat-alojamiento', 'alojamiento'],
+      ['cat-bodegas', 'bodegas'],
+    ] as const) {
+      expect(obtenerMetadatoCategoria(id).categoria).toBe(clave);
+    }
+  });
+});

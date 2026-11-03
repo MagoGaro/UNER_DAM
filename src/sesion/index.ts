@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 
 import { kvStorePersistente } from '@/src/almacenamiento/kvStore';
 import { obtenerUsuarioId } from '@/src/almacenamiento/usuarioLocal';
+import { quitarDispositivo } from '@/src/notificaciones/registroPush';
 import { servicioAuth } from '@/src/servicios/auth';
 import { AlmacenSesion, type InstantaneaSesion } from './almacenSesion';
 import { biometriaDelTelefono } from './biometria';
@@ -15,6 +16,7 @@ export const sesion = new AlmacenSesion({
   tokens: tokenStoreSeguro,
   kv: kvStorePersistente,
   biometria: biometriaDelTelefono,
+  antesDeCerrarSesion: () => quitarDispositivo(),
 });
 
 export function useSesion(): InstantaneaSesion {

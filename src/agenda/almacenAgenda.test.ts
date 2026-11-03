@@ -3,10 +3,12 @@ import type { ServicioRecordatorios } from '@/src/notificaciones/recordatoriosEv
 import { ServicioEventosDePrueba } from '@/src/servicios/eventos/servicioEventosDePrueba';
 import type { Evento } from '@/src/tipos/evento';
 import { aISOConZona } from '@/src/utils/fechas';
+import type { ServicioEventosGuardados } from '@/src/servicios/eventosGuardados';
 import { crearAgenda } from './almacenAgenda';
 
 jest.mock('@/src/notificaciones/recordatoriosEventos', () => ({ servicioRecordatoriosExpo: {} }));
 jest.mock('@/src/servicios/eventos', () => ({ servicioEventos: {} }));
+jest.mock('@/src/servicios/eventosGuardados', () => ({ servicioEventosGuardados: {} }));
 
 const ahora = new Date(2026, 9, 22, 9, 0);
 const enHoras = (h: number) => aISOConZona(new Date(ahora.getTime() + h * 3_600_000));
@@ -140,5 +142,78 @@ describe('almacenAgenda', () => {
     const r = await agenda.alternarGuardado(evento({ estado: 'cancelado' }));
     expect(r.recordatorio).toBeNull();
     expect(registro.programados).toEqual([]);
+  });
+});
+
+describe('eventos guardados en la cuenta', () => {
+  function servidorFalso(enServidor: Evento[] = []) {
+    const registro = { guardados: [] as string[], quitados: [] as string[] };
+    const estado = { sesion: true };
+    const servicio: ServicioEventosGuardados = {
+      async listar() {
+        return estado.sesion
+          ? { datos: enServidor, meta: null }
+          : { error: { codigo: 'NO_AUTENTICADO', mensaje: 'Tenés que ingresar.' } };
+      },
+      async guardar(id) {
+        registro.guardados.push(id);
+        return { datos: null, meta: null };
+      },
+      async quitar(id) {
+        registro.quitados.push(id);
+        return { datos: null, meta: null };
+      },
+    };
+    return { servicio, registro, estado };
+  }
+
+  function armar(servidor: ServicioEventosGuardados, datos: Evento[]) {
+    const { servicio } = recordatoriosFalsos();
+    return crearAgenda({
+      servicio: new ServicioEventosDePrueba(() => datos, 0),
+      store: crearKVStoreEnMemoria(),
+      recordatorios: servicio,
+      ahora: () => ahora,
+      guardadosServidor: servidor,
+    });
+  }
+
+  it('al guardar y al quitar avisa a la cuenta', async () => {
+    const { servicio, registro } = servidorFalso();
+    const datos = [evento()];
+    const agenda = armar(servicio, datos);
+    await agenda.cargarEventos();
+    await agenda.alternarGuardado(datos[0]);
+    await agenda.alternarGuardado(datos[0]);
+    expect(registro.guardados).toEqual(['evt-1']);
+    expect(registro.quitados).toEqual(['evt-1']);
+  });
+
+  it('al sincronizar sube lo que solo estaba en el teléfono', async () => {
+    const { servicio, registro } = servidorFalso([]);
+    const datos = [evento()];
+    const agenda = armar(servicio, datos);
+    await agenda.cargarEventos();
+    await agenda.alternarGuardado(datos[0]);
+    registro.guardados.length = 0;
+    await agenda.sincronizarGuardados();
+    expect(registro.guardados).toEqual(['evt-1']);
+  });
+
+  it('en un teléfono nuevo trae los eventos que la cuenta tenía guardados', async () => {
+    const delServidor = evento({ id: 'evt-9', titulo: 'Feria' });
+    const { servicio, registro } = servidorFalso([delServidor]);
+    const agenda = armar(servicio, [delServidor]);
+    await agenda.sincronizarGuardados();
+    expect(agenda.estaGuardado('evt-9')).toBe(true);
+    expect(registro.guardados).toEqual([]);
+  });
+
+  it('sin sesión no cambia nada', async () => {
+    const { servicio, estado } = servidorFalso([evento({ id: 'evt-9' })]);
+    estado.sesion = false;
+    const agenda = armar(servicio, []);
+    await agenda.sincronizarGuardados();
+    expect(agenda.estaGuardado('evt-9')).toBe(false);
   });
 });

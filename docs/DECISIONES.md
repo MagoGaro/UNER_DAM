@@ -32,3 +32,23 @@ distinto, cada uno indica el único lugar que hay que tocar.
 ## Avisos esperados en Expo Go
 
 - **«expo-notifications: Android Push notifications … was removed from Expo Go»**: aparece solo en desarrollo dentro de Expo Go. La app usa únicamente notificaciones locales, que funcionan igual, y en una build de EAS no existe. Se silencia en `src/utils/silenciarAvisoExpoGo.ts`, que se importa primero desde `index.ts` (el archivo de entrada, referido en `package.json`).
+
+## Conexión con la API de Mi Ciudad
+
+La API de la cátedra (carpeta `api-mi-ciudad` de `franco-ruisdias-uner/api-proyectos-mobile`) ya está conectada. Los servicios reales viven en `src/servicios/*/servicio*Api.ts` y se eligen en el `index.ts` de cada servicio.
+
+| Tema | Decisión |
+| --- | --- |
+| **Base de datos de la API** | SQLite por defecto (sin instalar nada). También PostgreSQL 17, MySQL 8.4 y MariaDB 11 (`DB_MOTOR` en el `.env` de la API). Publicada en la nube usa PostgreSQL en Supabase, con la API en Render. La app no habla con la base: solo con la API. |
+| **Cuándo usa la API real** | Si existe `EXPO_PUBLIC_API_URL` (en `.env.local`, ver `.env.example`). Sin esa variable la app sigue con datos de prueba, así nadie queda trabado sin la API levantada. Hay que reiniciar con `npx expo start -c` al cambiarla. |
+| **Cuentas de demo de la API** | `lucia@mail.com` / `lucia1234`, `nuevo@demo.ar` / `nuevo1234` (cuenta vacía) y `turismo@colon.demo.ar` / `turismo1234` (puede suspender eventos). La de prueba sin API sigue siendo `lucia@mail.com` / `123456`. |
+| **Catálogo** | Se baja entero (`GET /lugares?porPagina=500`) y se guarda en el teléfono con `ServicioLugaresConCache`. Pendiente de mejora: pedir solo las novedades con `actualizadoDesde`. |
+| **Favoritos** | La API los maneja por lugar (`PUT` y `DELETE /yo/favoritos/:lugarId`), por eso `ServicioFavoritos.quitar` recibe `usuarioId` y `lugarId`. Si un lugar ya no existe en el servidor, el favorito pendiente se descarta. |
+| **Mi recorrido** | Para subir una visita con foto, primero `POST /archivos` (multipart) y después `POST /yo/visitas` con la URL devuelta; si la persona edita la nota o la foto de una visita ya subida, se manda con `PATCH /yo/visitas/:id` (el `POST` es idempotente y no la actualizaría). Las visitas piden sesión: sin cuenta esperan en la cola del teléfono hasta que la persona ingrese. Al sincronizar con sesión se traen también las visitas de la cuenta que no estaban en el teléfono (cambio de teléfono, otro año). La API acepta fotos JPG, PNG o WEBP de hasta 5 MB (una foto HEIC se rechaza y queda pendiente). Al cerrar sesión las visitas quedan en el teléfono. |
+| **Lo que la API no tiene** | Cerrar sesión (se olvida el token en el teléfono; dura 30 días) y borrar visitas (se borran del teléfono y quedan en la cuenta). |
+| **Eventos guardados y avisos** | Los eventos guardados viajan a la cuenta (`PUT` y `DELETE /yo/eventos-guardados/:id`) y al ingresar se unen con los del teléfono, así la API sabe a quién avisar. Si se desguarda un evento sin señal, el próximo sincronizado lo puede volver a traer. La app sigue detectando los cambios de estado al abrirse, al volver a primer plano y al recuperar señal, y avisa con notificaciones locales. Con una build propia y `eas init` hecho, el teléfono se registra en `POST /dispositivos` (y se da de baja al cerrar sesión) para las push del servidor; en Expo Go no pasa nada. La API responde 501 en `/dispositivos` hasta que se complete su parte de notificaciones (`docs/NOTIFICATIONS.md` de la API): la app lo ignora. |
+| **Categorías** | Se suma `bodegas` (`cat-bodegas`, hoy sin lugares) para que coincidan con las categorías de la API. |
+| **Horarios** | El detalle muestra la semana completa (por ejemplo «Mar a Jue: 09:00 a 19:00 hs», «Lun: Cerrado»), con los días seguidos juntos y varios tramos por día. La API manda solo los horarios de la temporada vigente. «Abierto ahora» ya soportaba varios tramos y los que cruzan la medianoche. |
+| **Builds de EAS** | Una app instalada no llega a `http://` ni a una IP de la compu: para eso hay que publicar la API (Render + Supabase, ver el README de la API) y usar su dirección `https://`. |
+
+Para probar contra la API real: levantarla (README de la API, `docker compose up` o `pnpm dev`), copiar `.env.example` a `.env.local` con la IP de la compu, `npx expo start -c` y, si se quiere, `API_PRUEBAS_URL=http://localhost:3000 npx jest src/servicios/api/integracion` (prueba el cliente contra la API sin abrir la app).

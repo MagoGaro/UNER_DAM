@@ -132,3 +132,77 @@ export function evaluarEstadoHorario(lugar: Lugar, fecha: Date = new Date()): Es
     mensaje: `Cerrado por hoy (cerró a las ${ultima.horario.cierra} hs)`,
   };
 }
+
+const NOMBRE_DIA: Record<Dia, string> = { 0: 'Dom', 1: 'Lun', 2: 'Mar', 3: 'Mié', 4: 'Jue', 5: 'Vie', 6: 'Sáb' };
+/** La semana se muestra de lunes a domingo. */
+const ORDEN_SEMANA: Dia[] = [1, 2, 3, 4, 5, 6, 0];
+
+export interface LineaHorario {
+  /** «Lun a Vie», «Sáb y Dom», «Mar». */
+  dias: string;
+  /** «09:00 a 13:00 hs y 16:00 a 20:00 hs» o «Cerrado». */
+  texto: string;
+}
+
+export interface GrupoHorario {
+  /** «General», «Verano» o «Invierno». */
+  titulo: string;
+  lineas: LineaHorario[];
+}
+
+function tituloDeTemporada(h: Horario): string {
+  const t = h.temporada?.toLowerCase();
+  if (t === 'verano') return 'Verano';
+  if (t === 'invierno') return 'Invierno';
+  return 'General';
+}
+
+function nombreDeRango(dias: Dia[]): string {
+  if (dias.length === 1) return NOMBRE_DIA[dias[0]];
+  if (dias.length === 2) return `${NOMBRE_DIA[dias[0]]} y ${NOMBRE_DIA[dias[1]]}`;
+  return `${NOMBRE_DIA[dias[0]]} a ${NOMBRE_DIA[dias[dias.length - 1]]}`;
+}
+
+/**
+ * Horarios de la semana para mostrar en el detalle: un grupo por
+ * temporada (la API manda solo la vigente) y, dentro de cada uno, los días
+ * seguidos con el mismo horario juntos. Un día sin tramos figura «Cerrado».
+ * Un lugar puede tener varios tramos el mismo día (mañana y tarde).
+ */
+export function resumenSemanal(horarios: Horario[]): GrupoHorario[] {
+  const porTemporada = new Map<string, Horario[]>();
+  for (const h of horarios) {
+    const titulo = tituloDeTemporada(h);
+    porTemporada.set(titulo, [...(porTemporada.get(titulo) ?? []), h]);
+  }
+
+  const grupos: GrupoHorario[] = [];
+  for (const [titulo, lista] of porTemporada) {
+    const textoPorDia = ORDEN_SEMANA.map((dia) => {
+      const tramos = lista
+        .filter((h) => h.dia === dia)
+        .sort((a, b) => a.abre.localeCompare(b.abre))
+        .map((h) => `${h.abre} a ${h.cierra} hs`);
+      return { dia, texto: tramos.length ? tramos.join(' y ') : 'Cerrado' };
+    });
+
+    const lineas: LineaHorario[] = [];
+    let bloque: Dia[] = [];
+    let textoBloque = '';
+    const cerrarBloque = () => {
+      if (bloque.length) lineas.push({ dias: nombreDeRango(bloque), texto: textoBloque });
+    };
+    for (const { dia, texto } of textoPorDia) {
+      if (bloque.length && texto === textoBloque) {
+        bloque.push(dia);
+      } else {
+        cerrarBloque();
+        bloque = [dia];
+        textoBloque = texto;
+      }
+    }
+    cerrarBloque();
+    grupos.push({ titulo, lineas });
+  }
+  return grupos;
+}
