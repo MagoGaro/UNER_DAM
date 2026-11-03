@@ -36,6 +36,8 @@ export interface DependenciasSesion {
   tokens: TokenStore;
   kv: KVStore;
   biometria: Biometria;
+  /** Se ejecuta antes de borrar el token al cerrar sesión (por ejemplo, dar de baja el teléfono de las push). */
+  antesDeCerrarSesion?: () => Promise<void>;
 }
 
 /**
@@ -175,6 +177,7 @@ export class AlmacenSesion {
   }
 
   async cerrarSesion(): Promise<void> {
+    await this.ejecutarAntesDeCerrar();
     const token = await this.deps.tokens.leer();
     if (token) {
       try {
@@ -184,6 +187,21 @@ export class AlmacenSesion {
       }
     }
     await this.olvidarSesion();
+  }
+
+  /** Tarea previa al cierre, sin trabar nunca: falla en silencio y espera como mucho 4 segundos. */
+  private async ejecutarAntesDeCerrar(): Promise<void> {
+    const tarea = this.deps.antesDeCerrarSesion;
+    if (!tarea) return;
+    let reloj: ReturnType<typeof setTimeout> | undefined;
+    const limite = new Promise<void>((resolver) => {
+      reloj = setTimeout(resolver, 4000);
+    });
+    try {
+      await Promise.race([tarea().catch(() => {}), limite]);
+    } finally {
+      clearTimeout(reloj);
+    }
   }
 
   async activarBiometria(activar: boolean): Promise<ResultadoAccion> {

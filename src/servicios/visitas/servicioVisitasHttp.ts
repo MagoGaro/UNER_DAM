@@ -59,7 +59,7 @@ export class ServicioVisitasHttp implements ServicioVisitasApi {
       if (esError(subida)) return subida;
       fotoUrl = subida.datos.url;
     }
-    return this.cliente.pedir<Visita>({
+    const creada = await this.cliente.pedir<Visita>({
       metodo: 'POST',
       ruta: '/yo/visitas',
       conSesion: true,
@@ -72,6 +72,24 @@ export class ServicioVisitasHttp implements ServicioVisitasApi {
         nota: visita.nota,
       },
     });
+    if (esError(creada)) return creada;
+
+    // `POST` es idempotente por id: si la visita ya existía devuelve la que tenía el servidor.
+    // Si la persona cambió la nota o la foto, hay que mandar el cambio con `PATCH`.
+    const cambios: { nota?: string; fotoUri?: string } = {};
+    if ((creada.datos.nota ?? null) !== (visita.nota ?? null)) cambios.nota = visita.nota ?? '';
+    if (fotoUrl && creada.datos.fotoUri !== fotoUrl) cambios.fotoUri = fotoUrl;
+    if (Object.keys(cambios).length === 0) return creada;
+    return this.cliente.pedir<Visita>({
+      metodo: 'PATCH',
+      ruta: `/yo/visitas/${encodeURIComponent(visita.id)}`,
+      conSesion: true,
+      cuerpo: cambios,
+    });
+  }
+
+  listarVisitas(): Promise<RespuestaApi<Visita[]>> {
+    return this.cliente.pedirTodo<Visita>('/yo/visitas', {}, { conSesion: true, porPagina: 500 });
   }
 
   /** La API no permite borrar visitas: se borra del teléfono y queda en la cuenta. */

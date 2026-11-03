@@ -26,7 +26,10 @@ export function TareasDeFondo() {
     const bajaCuenta = iniciarCuenta();
 
     const refrescar = () => {
-      agenda.cargarEventos().catch(() => {});
+      agenda
+        .cargarEventos()
+        .then(() => agenda.sincronizarGuardados())
+        .catch(() => {});
       favoritos.sincronizar().catch(() => {});
       recorrido
         .recargar()

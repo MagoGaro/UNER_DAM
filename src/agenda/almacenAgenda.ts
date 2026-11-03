@@ -1,6 +1,7 @@
 import { guardarJSON, kvStorePersistente, leerJSON, type KVStore } from '@/src/almacenamiento/kvStore';
 import { servicioRecordatoriosExpo, type ServicioRecordatorios } from '@/src/notificaciones/recordatoriosEventos';
 import { servicioEventos as servicioPorDefecto, type ServicioEventos } from '@/src/servicios/eventos';
+import { servicioEventosGuardados, type ServicioEventosGuardados } from '@/src/servicios/eventosGuardados';
 import { esError } from '@/src/tipos/api';
 import type { Evento } from '@/src/tipos/evento';
 import { crearAlmacen, type Almacen } from '@/src/utils/almacen';
@@ -47,6 +48,8 @@ interface Dependencias {
   store: KVStore;
   recordatorios: ServicioRecordatorios;
   ahora: () => Date;
+  /** Eventos guardados en la cuenta (opcional: sin API no hay nada que sincronizar). */
+  guardadosServidor?: ServicioEventosGuardados;
 }
 
 export function crearAgenda(deps: Dependencias) {
@@ -156,9 +159,18 @@ export function crearAgenda(deps: Dependencias) {
       almacen.actualizar({ guardados });
       await deps.recordatorios.cancelar(existente.notificacionId);
       await persistirGuardados();
+      deps.guardadosServidor?.quitar(evento.id).catch(() => {});
       return { guardado: false, recordatorio: null };
     }
 
+    const resultado = await guardarLocal(evento);
+    deps.guardadosServidor?.guardar(evento.id).catch(() => {});
+    return resultado;
+  }
+
+  /** Guarda el evento en el teléfono y programa el recordatorio si todavía se puede. */
+  async function guardarLocal(evento: Evento): Promise<ResultadoGuardar> {
+    const guardados = { ...almacen.obtener().guardados };
     const ahora = deps.ahora();
     const vigente = estaVigente(estadoVisible(evento, ahora));
     const cuando = vigente ? momentoRecordatorio(evento.inicio, ahora) : null;
@@ -184,7 +196,32 @@ export function crearAgenda(deps: Dependencias) {
     return { guardado: true, recordatorio: notificacionId ? cuando : null };
   }
 
-  return { almacen, inicializar, cargarEventos, alternarGuardado, estaGuardado };
+  /**
+   * Alinea los eventos guardados con los de la cuenta: los que están acá y
+   * no en el servidor se suben (así la API sabe a quién avisar) y los de la
+   * cuenta que no están acá se agregan (cambio de teléfono). Sin sesión o sin
+   * señal no hace nada.
+   */
+  async function sincronizarGuardados(): Promise<void> {
+    const servidor = deps.guardadosServidor;
+    if (!servidor) return;
+    await inicializar();
+    try {
+      const remotos = await servidor.listar();
+      if (esError(remotos)) return;
+      const idsRemotos = new Set(remotos.datos.map((e) => e.id));
+      for (const id of Object.keys(almacen.obtener().guardados)) {
+        if (!idsRemotos.has(id)) await servidor.guardar(id);
+      }
+      for (const evento of remotos.datos) {
+        if (!almacen.obtener().guardados[evento.id]) await guardarLocal(evento);
+      }
+    } catch {
+      // Sin señal: se reintenta en la próxima actualización.
+    }
+  }
+
+  return { almacen, inicializar, cargarEventos, alternarGuardado, estaGuardado, sincronizarGuardados };
 }
 
 export type Agenda = ReturnType<typeof crearAgenda>;
@@ -195,4 +232,5 @@ export const agenda: Agenda = crearAgenda({
   store: kvStorePersistente,
   recordatorios: servicioRecordatoriosExpo,
   ahora: () => new Date(),
+  guardadosServidor: servicioEventosGuardados,
 });

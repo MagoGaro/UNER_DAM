@@ -73,3 +73,63 @@ describe('recorrido', () => {
     expect(await repo.listar()).toHaveLength(0);
   });
 });
+
+describe('recorrido en un teléfono nuevo', () => {
+  const remota = (id: string, fechaHora: string) => ({
+    id,
+    usuarioId: 'usr-201',
+    lugarId: 'lug-004',
+    fechaHora,
+    origen: 'qr' as const,
+    fotoUri: 'http://api/archivos/x.jpg',
+    nota: 'Desde otro teléfono',
+    sincronizada: true,
+  });
+
+  function armarConServidor(remotas: ReturnType<typeof remota>[], hayConexion = true) {
+    const repo = crearRepositorioEnMemoria();
+    const api: ServicioVisitasApi = {
+      subirVisita: async (v) => ({ datos: { ...v, sincronizada: true }, meta: null }),
+      eliminarVisita: async () => ({ datos: null, meta: null }),
+      listarVisitas: async () => ({ datos: remotas, meta: null }),
+    };
+    const recorrido = crearRecorrido({
+      repo,
+      api,
+      usuarioId: async () => 'usr-201',
+      hayConexion: async () => hayConexion,
+      guardarFoto: (_u, id) => `file:///docs/visitas/${id}.jpg`,
+      borrarFoto: () => {},
+      ahora: () => new Date(2026, 10, 13, 16, 42),
+    });
+    return { recorrido, repo };
+  }
+
+  it('al sincronizar trae las visitas de la cuenta que no estaban y las muestra en orden', async () => {
+    const { recorrido, repo } = armarConServidor([
+      remota('vis-2', '2026-11-12T11:00:00-03:00'),
+      remota('vis-1', '2026-11-11T10:00:00-03:00'),
+    ]);
+    await recorrido.recargar();
+    await recorrido.sincronizar();
+    expect(recorrido.almacen.obtener().visitas.map((v) => v.id)).toEqual(['vis-1', 'vis-2']);
+    expect(await repo.pendientes()).toHaveLength(0);
+  });
+
+  it('no duplica una visita que ya estaba en el teléfono', async () => {
+    const { recorrido, repo } = armarConServidor([remota('vis-1', '2026-11-11T10:00:00-03:00')]);
+    await repo.guardar({ ...remota('vis-1', '2026-11-11T10:00:00-03:00'), nota: 'Nota local' });
+    await recorrido.recargar();
+    await recorrido.sincronizar();
+    const visitas = recorrido.almacen.obtener().visitas;
+    expect(visitas).toHaveLength(1);
+    expect(visitas[0].nota).toBe('Nota local');
+  });
+
+  it('sin señal no intenta traer nada', async () => {
+    const { recorrido } = armarConServidor([remota('vis-1', '2026-11-11T10:00:00-03:00')], false);
+    await recorrido.recargar();
+    await recorrido.sincronizar();
+    expect(recorrido.almacen.obtener().visitas).toHaveLength(0);
+  });
+});

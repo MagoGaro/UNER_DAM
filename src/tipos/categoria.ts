@@ -19,6 +19,7 @@ export type Categoria =
   | 'mirador'
   | 'restaurante'
   | 'alojamiento'
+  | 'bodegas'
   | 'naturaleza'
   | 'otro';
 
@@ -37,6 +38,7 @@ const METADATOS: Record<Categoria, MetadatoCategoria> = {
   artesanias:{categoria: 'artesanias', etiqueta: 'Artesanias',color: '#F59F00', icono: 'color-palette'},
   naturaleza: { categoria: 'naturaleza', etiqueta: 'Naturaleza', color: '#6C757D', icono: 'leaf' },
   alojamiento: { categoria: 'alojamiento', etiqueta: 'Alojamiento', color: '#D6336C', icono: 'bed' },
+  bodegas: { categoria: 'bodegas', etiqueta: 'Bodegas', color: '#862E9C', icono: 'wine' },
   monumento: { categoria: 'monumento', etiqueta: 'Monumentos', color: '#8E5A2D', icono: 'flag' },
   mirador: { categoria: 'mirador', etiqueta: 'Miradores', color: '#1C7ED6', icono: 'eye' },
   restaurante: {categoria : 'restaurante', etiqueta: 'Restaurante', color: '#D9480F', icono: 'restaurant' },

@@ -7,12 +7,14 @@ import { crearBiometriaDePrueba } from './biometria';
 import { crearTokenStoreEnMemoria } from './tokenStore';
 import { validarIngreso, validarRegistro } from './validaciones';
 
-function armar(opciones: { biometria?: boolean; aceptaBiometria?: boolean; auth?: ServicioAuth } = {}) {
+function armar(
+  opciones: { biometria?: boolean; aceptaBiometria?: boolean; auth?: ServicioAuth; antesDeCerrar?: () => Promise<void> } = {}
+) {
   const tokens = crearTokenStoreEnMemoria();
   const kv = crearKVStoreEnMemoria();
   const auth = opciones.auth ?? new ServicioAuthDePrueba(0);
   const biometria = crearBiometriaDePrueba(opciones.biometria ?? false, opciones.aceptaBiometria ?? true);
-  const nueva = () => new AlmacenSesion({ auth, tokens, kv, biometria });
+  const nueva = () => new AlmacenSesion({ auth, tokens, kv, biometria, antesDeCerrarSesion: opciones.antesDeCerrar });
   return { tokens, kv, auth, nueva, sesion: nueva() };
 }
 
@@ -157,6 +159,24 @@ describe('AlmacenSesion', () => {
     await sesion.cerrarSesion();
     expect(sesion.obtener().estado).toBe('invitado');
     expect(await tokens.leer()).toBeNull();
+  });
+
+  it('al cerrar sesión ejecuta la tarea previa (dar de baja el teléfono) con el token todavía guardado', async () => {
+    let tokenVisto: string | null = 'sin-llamar';
+    const ctx = armar({ antesDeCerrar: async () => { tokenVisto = await ctx.tokens.leer(); } });
+    await ctx.sesion.iniciar();
+    await ctx.sesion.iniciarSesion({ email: 'lucia@mail.com', password: '123456' });
+    await ctx.sesion.cerrarSesion();
+    expect(tokenVisto).toMatch(/^tok-/);
+    expect(await ctx.tokens.leer()).toBeNull();
+  });
+
+  it('si la tarea previa falla, igual cierra la sesión', async () => {
+    const ctx = armar({ antesDeCerrar: async () => { throw new Error('sin red'); } });
+    await ctx.sesion.iniciar();
+    await ctx.sesion.iniciarSesion({ email: 'lucia@mail.com', password: '123456' });
+    await ctx.sesion.cerrarSesion();
+    expect(ctx.sesion.obtener().estado).toBe('invitado');
   });
 
   it('guarda las preferencias en el teléfono y avisa a los oyentes', async () => {

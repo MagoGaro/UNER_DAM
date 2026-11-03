@@ -1,5 +1,7 @@
 import { ServicioAuthApi } from '@/src/servicios/auth/servicioAuthApi';
+import { ServicioDispositivosApi } from '@/src/servicios/dispositivos/servicioDispositivosApi';
 import { ServicioEventosApi } from '@/src/servicios/eventos/servicioEventosApi';
+import { ServicioEventosGuardadosApi } from '@/src/servicios/eventosGuardados/servicioEventosGuardadosApi';
 import { ServicioFavoritosApi } from '@/src/servicios/favoritos/servicioFavoritosApi';
 import { ServicioLugaresApi } from '@/src/servicios/lugares/servicioLugaresApi';
 import { ServicioVisitasHttp, tipoMimeDeFoto } from '@/src/servicios/visitas/servicioVisitasHttp';
@@ -119,6 +121,29 @@ describe('ServicioVisitasHttp', () => {
     expect(r).toMatchObject({ datos: { sincronizada: true } });
   });
 
+  it('si la visita ya existía en el servidor y cambió la nota, la actualiza con PATCH', async () => {
+    const { cliente, pedidos } = clienteDePrueba((p) =>
+      p.metodo === 'PATCH'
+        ? ok({ ...visita, nota: 'Nota nueva', sincronizada: true })
+        : ok({ ...visita, nota: 'Nota vieja', sincronizada: true })
+    );
+    const r = await new ServicioVisitasHttp(cliente, async () => archivoSubido('x')).subirVisita({
+      ...visita,
+      fotoUri: null,
+      nota: 'Nota nueva',
+    });
+    expect(pedidos.map((p) => p.metodo)).toEqual(['POST', 'PATCH']);
+    expect(pedidos[1].url).toBe('http://api.test:3000/yo/visitas/vis-abc');
+    expect(JSON.parse(pedidos[1].cuerpo!)).toEqual({ nota: 'Nota nueva' });
+    expect(r).toMatchObject({ datos: { nota: 'Nota nueva' } });
+  });
+
+  it('trae las visitas de la cuenta', async () => {
+    const { cliente } = clienteDePrueba(() => ok([visita], { total: 1, pagina: 1, porPagina: 500 }));
+    const r = await new ServicioVisitasHttp(cliente).listarVisitas();
+    expect(r).toMatchObject({ datos: [{ id: 'vis-abc' }] });
+  });
+
   it('si la foto no se pudo subir, no manda la visita y devuelve el error', async () => {
     const { cliente, pedidos } = clienteDePrueba(() => ok(visita));
     const subir = jest.fn(async (_uri: string) => errorDeArchivo('TIPO_DE_ARCHIVO_NO_PERMITIDO'));
@@ -150,5 +175,42 @@ describe('ServicioVisitasHttp', () => {
     expect(tipoMimeDeFoto('file:///a/b.PNG')).toBe('image/png');
     expect(tipoMimeDeFoto('file:///a/b.jpg?x=1')).toBe('image/jpeg');
     expect(tipoMimeDeFoto('file:///a/b')).toBe('image/jpeg');
+  });
+});
+
+describe('ServicioEventosGuardadosApi', () => {
+  it('guarda, quita y lista con la sesión', async () => {
+    const { cliente, pedidos } = clienteDePrueba((p) => (p.metodo === 'DELETE' ? { estado: 204 } : ok([], { total: 0, pagina: 1, porPagina: 50 })));
+    const s = new ServicioEventosGuardadosApi(cliente);
+    await s.listar();
+    await s.guardar('evt-017');
+    await s.quitar('evt-017');
+    expect(pedidos.map((p) => `${p.metodo} ${new URL(p.url).pathname}`)).toEqual([
+      'GET /yo/eventos-guardados',
+      'PUT /yo/eventos-guardados/evt-017',
+      'DELETE /yo/eventos-guardados/evt-017',
+    ]);
+    expect(pedidos.every((p) => p.encabezados.Authorization === 'Bearer tok-1')).toBe(true);
+  });
+});
+
+describe('ServicioDispositivosApi', () => {
+  it('registra el teléfono y lo da de baja', async () => {
+    const { cliente, pedidos } = clienteDePrueba((p) =>
+      p.metodo === 'POST' ? ok({ tokenExpo: 'ExponentPushToken[abc]', plataforma: 'android' }) : { estado: 204 }
+    );
+    const s = new ServicioDispositivosApi(cliente);
+    await s.registrar('ExponentPushToken[abc]', 'android');
+    await s.quitar('ExponentPushToken[abc]');
+    expect(JSON.parse(pedidos[0].cuerpo!)).toEqual({ tokenExpo: 'ExponentPushToken[abc]', plataforma: 'android' });
+    expect(pedidos[1].metodo).toBe('DELETE');
+    expect(pedidos[1].url).toContain('/dispositivos/ExponentPushToken%5Babc%5D');
+  });
+
+  it('mientras la API no tenga las push completas (501) no rompe nada', async () => {
+    const { cliente } = clienteDePrueba(() => fallo(501, 'NO_IMPLEMENTADO'));
+    expect(await new ServicioDispositivosApi(cliente).registrar('t', 'ios')).toEqual({
+      error: expect.objectContaining({ codigo: 'NO_IMPLEMENTADO' }),
+    });
   });
 });

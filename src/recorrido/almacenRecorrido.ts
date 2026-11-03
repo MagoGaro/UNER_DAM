@@ -1,5 +1,6 @@
 import type { RepositorioVisitas } from '@/src/servicios/visitas/RepositorioVisitas';
 import type { ServicioVisitasApi } from '@/src/servicios/visitas/ServicioVisitasApi';
+import { esError } from '@/src/tipos/api';
 import type { OrigenVisita, Visita } from '@/src/tipos/visita';
 import { crearAlmacen } from '@/src/utils/almacen';
 import { aISOConZona, claveDia, desdeISO } from '@/src/utils/fechas';
@@ -53,13 +54,36 @@ export function crearRecorrido(deps: Dependencias) {
     }
   }
 
+  /** Trae las visitas de la cuenta que no están en este teléfono (cambio de teléfono, otro año). */
+  async function traerDelServidor(): Promise<number> {
+    if (!deps.api.listarVisitas) return 0;
+    const remotas = await deps.api.listarVisitas();
+    if (esError(remotas)) return 0;
+    const locales = new Set((await deps.repo.listar()).map((v) => v.id));
+    let nuevas = 0;
+    for (const visita of remotas.datos) {
+      if (locales.has(visita.id)) continue;
+      await deps.repo.guardar({ ...visita, sincronizada: true });
+      nuevas += 1;
+    }
+    return nuevas;
+  }
+
   function sincronizar(): Promise<ResultadoSincronizacion> {
     if (sincronizacionEnCurso) return sincronizacionEnCurso;
     sincronizacionEnCurso = (async () => {
       almacen.actualizar({ sincronizando: true });
       try {
         const resultado = await sincronizarPendientes(deps.repo, deps.api, await deps.hayConexion());
-        if (resultado.subidas > 0) await recargar();
+        let nuevas = 0;
+        if (!resultado.sinConexion) {
+          try {
+            nuevas = await traerDelServidor();
+          } catch {
+            // Sin señal o servidor caído: se reintenta en la próxima sincronización.
+          }
+        }
+        if (resultado.subidas > 0 || nuevas > 0) await recargar();
         return resultado;
       } catch {
         return { subidas: 0, fallidas: 0, sinConexion: false };

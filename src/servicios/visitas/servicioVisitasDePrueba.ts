@@ -16,6 +16,11 @@ export class ServicioVisitasDePrueba implements ServicioVisitasApi {
     return { datos: { ...visita, sincronizada: true }, meta: null };
   }
 
+  async listarVisitas(): Promise<RespuestaApi<Visita[]>> {
+    await esperar(this.demoraMs / 2);
+    return { datos: [], meta: { total: 0, pagina: 1, porPagina: 1 } };
+  }
+
   async eliminarVisita(): Promise<RespuestaApi<null>> {
     await esperar(this.demoraMs / 2);
     return { datos: null, meta: null };

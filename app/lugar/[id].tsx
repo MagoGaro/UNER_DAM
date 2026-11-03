@@ -5,7 +5,7 @@ import { Image } from 'expo-image';
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { evaluarEstadoHorario } from '@/src/utils/horarios';
+import { evaluarEstadoHorario, resumenSemanal } from '@/src/utils/horarios';
 import { abrirEnMapaExterno } from '@/src/utils/geo';
 import type { Lugar } from '@/src/tipos/lugar';
 import { servicioLugares } from '@/src/servicios/lugares';
@@ -68,21 +68,8 @@ export default function DetalleLugarPantalla() {
   // Evaluar horario dinámico en tiempo real
   const estadoHorario = lugar ? evaluarEstadoHorario(lugar) : null;
 
-  // Resumen de horarios agrupaditos por temporada (Verano / Invierno / General)
-  const resumenTemporadas = useMemo(() => {
-    if (!lugar?.horarios || lugar.horarios.length === 0) return [];
-    
-    const mapTemporadas = new Map<string, string>();
-    for (const h of lugar.horarios) {
-      const tempNombre = h.temporada
-        ? h.temporada.charAt(0).toUpperCase() + h.temporada.slice(1).toLowerCase()
-        : 'General';
-      if (!mapTemporadas.has(tempNombre)) {
-        mapTemporadas.set(tempNombre, `${h.abre} a ${h.cierra} hs`);
-      }
-    }
-    return Array.from(mapTemporadas.entries());
-  }, [lugar?.horarios]);
+  // Horarios de la semana (por temporada, con los días seguidos juntos)
+  const horariosSemana = useMemo(() => resumenSemanal(lugar?.horarios ?? []), [lugar?.horarios]);
 
   const alternarReproduccion = () => {
     if (!reproductorAudio || !fuenteAudio) return;
@@ -342,14 +329,21 @@ export default function DetalleLugarPantalla() {
               </View>
             )}
 
-            {/* Horarios por temporada */}
-            {resumenTemporadas.length > 0 && (
+            {/* Horarios de la semana */}
+            {horariosSemana.length > 0 && (
               <View style={estilos.bloqueTemporadas}>
                 <Text style={estilos.subtituloTemporadas}>Horarios de atención:</Text>
-                {resumenTemporadas.map(([temporada, rango]) => (
-                  <Text key={temporada} style={estilos.textoTemporada}>
-                    • {temporada}: {rango}
-                  </Text>
+                {horariosSemana.map((grupo) => (
+                  <View key={grupo.titulo}>
+                    {(horariosSemana.length > 1 || grupo.titulo !== 'General') && (
+                      <Text style={estilos.textoTemporada}>{grupo.titulo}</Text>
+                    )}
+                    {grupo.lineas.map((linea) => (
+                      <Text key={`${grupo.titulo}-${linea.dias}`} style={estilos.textoTemporada}>
+                        • {linea.dias}: {linea.texto}
+                      </Text>
+                    ))}
+                  </View>
                 ))}
               </View>
             )}

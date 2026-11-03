@@ -9,4 +9,6 @@ import type { Visita } from '@/src/tipos/visita';
 export interface ServicioVisitasApi {
   subirVisita(visita: Visita): Promise<RespuestaApi<Visita>>;
   eliminarVisita(id: string): Promise<RespuestaApi<null>>;
+  /** Las visitas de la cuenta (para recuperar el recorrido en otro teléfono). Opcional en los mocks. */
+  listarVisitas?(): Promise<RespuestaApi<Visita[]>>;
 }
