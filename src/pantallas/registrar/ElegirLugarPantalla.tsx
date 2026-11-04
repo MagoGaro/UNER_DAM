@@ -10,6 +10,7 @@ import { Boton } from '@/src/componentes/estados/Boton';
 import { EstadoVacio } from '@/src/componentes/estados/EstadoVacio';
 import { COLORES } from '@/src/configuracion/tema';
 import { useCatalogoLugares } from '@/src/hooks/useCatalogoLugares';
+import { useCategorias } from '@/src/hooks/useCategorias';
 import { rutaConfirmarVisita, rutaElegirLugar } from '@/src/navegacion/rutas';
 import {
   lugaresParaRegistrar,
@@ -18,7 +19,9 @@ import {
   RADIO_REGISTRO_GPS_METROS,
   type LugarConDistancia,
 } from '@/src/recorrido/cercania';
-import { obtenerMetadatoCategoria } from '@/src/tipos/categoria';
+import { buscarCategoria } from '@/src/servicios/categorias';
+import { MENSAJE_PROBLEMA_SERVIDOR, TITULO_PROBLEMA_SERVIDOR } from '@/src/servicios/api/mensajes';
+import { iconoCategoria } from '@/src/tipos/categoria';
 import type { Coordenadas } from '@/src/tipos/coordenadas';
 import type { Lugar } from '@/src/tipos/lugar';
 import { formatearDistancia } from '@/src/utils/geo';
@@ -121,7 +124,8 @@ export function ElegirLugarPantalla({ modo }: { modo: 'manual' | 'gps' }) {
         <Stack.Screen options={{ title: titulo }} />
         <EstadoVacio
           icono="cloud-offline-outline"
-          titulo="No pudimos cargar los lugares"
+          titulo={TITULO_PROBLEMA_SERVIDOR}
+          descripcion={MENSAJE_PROBLEMA_SERVIDOR}
           textoBoton="Reintentar"
           onPresionarBoton={reintentar}
         />
@@ -236,22 +240,25 @@ export function ElegirLugarPantalla({ modo }: { modo: 'manual' | 'gps' }) {
 }
 
 function FilaLugar({ lugar, distancia, onPress }: { lugar: Lugar; distancia: number | null; onPress: () => void }) {
-  const meta = obtenerMetadatoCategoria(lugar.categoriaId);
+  const { categorias } = useCategorias();
+  const cat = buscarCategoria(categorias, lugar.categoriaId);
+  const color = cat?.color ?? '#495057';
+  const etiqueta = cat?.nombre ?? 'Lugar';
   return (
     <TouchableOpacity
       style={styles.fila}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${lugar.nombre}${distancia !== null ? `, a ${formatearDistancia(distancia)}` : ''}`}>
-      <View style={[styles.icono, { backgroundColor: meta.color }]}>
-        <Ionicons name={meta.icono} size={22} color="#fff" />
+      <View style={[styles.icono, { backgroundColor: color }]}>
+        <Ionicons name={iconoCategoria(cat?.icono)} size={22} color="#fff" />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.nombre} numberOfLines={2}>
           {lugar.nombre}
         </Text>
         <Text style={styles.detalle} numberOfLines={1}>
-          {meta.etiqueta}
+          {etiqueta}
           {distancia !== null ? ` · ${formatearDistancia(distancia)}` : ''}
         </Text>
       </View>

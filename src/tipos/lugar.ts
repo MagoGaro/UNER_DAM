@@ -1,4 +1,3 @@
-import type { Categoria } from './categoria';
 import type { Coordenadas } from './coordenadas';
 
 /**
@@ -36,7 +35,6 @@ export interface Lugar {
   accesible: boolean;
   actualizadoEn: string;
   nombre: string;
-  categoria?: Categoria;
   coordenadas: Coordenadas;
   activo: boolean;
   /**

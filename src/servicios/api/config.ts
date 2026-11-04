@@ -1,8 +1,7 @@
 /**
  * Dirección de la API de Mi Ciudad. Se lee de `EXPO_PUBLIC_API_URL`
- * (archivo `.env.local`, ver `.env.example`). Sin esa variable la app
- * sigue usando los servicios de prueba, así que nadie queda trabado si
- * no tiene la API levantada.
+ * (archivo `.env.local`, ver `.env.example`). Sin esa variable `clienteApi`
+ * responde error y las pantallas muestran el aviso de problema en el servidor.
  */
 const crudo = (process.env.EXPO_PUBLIC_API_URL ?? '').trim();
 

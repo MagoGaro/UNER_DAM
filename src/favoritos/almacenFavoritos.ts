@@ -12,9 +12,9 @@ export interface InstantaneaFavoritos {
 
 type Pendiente = { tipo: 'agregar'; lugarId: string } | { tipo: 'quitar'; lugarId: string };
 
-const CLAVE_LISTA = 'favoritos.lista';
-const CLAVE_PENDIENTES = 'favoritos.pendientes';
-const CLAVE_USUARIO = 'favoritos.usuario';
+const CLAVE_LISTA = 'favoritos.lista.api.v1';
+const CLAVE_PENDIENTES = 'favoritos.pendientes.api.v1';
+const CLAVE_USUARIO = 'favoritos.usuario.api.v1';
 
 export interface DependenciasFavoritos {
   kv: KVStore;

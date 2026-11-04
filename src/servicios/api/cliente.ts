@@ -1,3 +1,4 @@
+import { MENSAJE_PROBLEMA_SERVIDOR } from '@/src/servicios/api/mensajes';
 import { ErrorDeServicio, esError, type ErrorApi, type RespuestaApi } from '@/src/tipos/api';
 
 export type MetodoHttp = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -74,7 +75,7 @@ export function interpretarRespuesta<T>(estado: number, texto: string): Respuest
   try {
     json = JSON.parse(texto);
   } catch {
-    throw new ErrorDeServicio('RESPUESTA_INVALIDA', 'El servidor contestó algo que no entendemos. Probá de nuevo en un rato.');
+    throw new ErrorDeServicio('RESPUESTA_INVALIDA', MENSAJE_PROBLEMA_SERVIDOR);
   }
   if (esObjeto(json) && esObjeto(json.error)) {
     return {
@@ -87,7 +88,7 @@ export function interpretarRespuesta<T>(estado: number, texto: string): Respuest
   if (esObjeto(json) && 'datos' in json) {
     return { datos: json.datos as T, meta: (json.meta as never) ?? null };
   }
-  throw new ErrorDeServicio('RESPUESTA_INVALIDA', 'El servidor contestó algo que no entendemos. Probá de nuevo en un rato.');
+  throw new ErrorDeServicio('RESPUESTA_INVALIDA', MENSAJE_PROBLEMA_SERVIDOR);
 }
 
 export function crearCliente(deps: DependenciasCliente): ClienteApi {
@@ -118,7 +119,7 @@ export function crearCliente(deps: DependenciasCliente): ClienteApi {
         signal: control.signal,
       });
     } catch {
-      throw new ErrorDeServicio('SIN_RED', 'No hay conexión con el servidor.');
+      throw new ErrorDeServicio('SIN_RED', MENSAJE_PROBLEMA_SERVIDOR);
     } finally {
       clearTimeout(reloj);
     }
@@ -143,4 +144,17 @@ export function crearCliente(deps: DependenciasCliente): ClienteApi {
   }
 
   return { pedir, pedirTodo };
+}
+
+export function clienteSinServidor(): ClienteApi {
+  const respuesta = {
+    error: {
+      codigo: 'API_NO_CONFIGURADA',
+      mensaje: MENSAJE_PROBLEMA_SERVIDOR,
+    },
+  };
+  return {
+    pedir: async <T,>() => respuesta as RespuestaApi<T>,
+    pedirTodo: async <T,>() => respuesta as RespuestaApi<T[]>,
+  };
 }

@@ -12,6 +12,8 @@ import { servicioLugares } from '@/src/servicios/lugares';
 import { rutaConfirmarVisita } from '@/src/navegacion/rutas';
 import { useAudioguiaOffline } from '@/src/audio/useAudioguiaOffline';
 import { BotonFavorito } from '@/src/componentes/favoritos/BotonFavorito';
+import { EstadoVacio } from '@/src/componentes/estados/EstadoVacio';
+import { MENSAJE_PROBLEMA_SERVIDOR, TITULO_PROBLEMA_SERVIDOR } from '@/src/servicios/api/mensajes';
 
 function nombreIdioma(idioma: string): string {
   if (idioma === 'en') return 'inglés';
@@ -30,6 +32,8 @@ export default function DetalleLugarPantalla() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [lugar, setLugar] = useState<Lugar | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [falloServidor, setFalloServidor] = useState(false);
+  const [intento, setIntento] = useState(0);
 
   // Configurar modo de audio de Expo
   useEffect(() => {
@@ -39,15 +43,28 @@ export default function DetalleLugarPantalla() {
 
   // Cargar datos del lugar de forma asíncrona
   useEffect(() => {
+    let cancelado = false;
     async function cargarDetalle() {
       if (!id) return;
       setCargando(true);
-      const datos = await servicioLugares.obtenerPorId(id);
-      setLugar(datos);
-      setCargando(false);
+      setFalloServidor(false);
+      try {
+        const datos = await servicioLugares.obtenerPorId(id);
+        if (!cancelado) setLugar(datos);
+      } catch {
+        if (!cancelado) {
+          setLugar(null);
+          setFalloServidor(true);
+        }
+      } finally {
+        if (!cancelado) setCargando(false);
+      }
     }
     cargarDetalle();
-  }, [id]);
+    return () => {
+      cancelado = true;
+    };
+  }, [id, intento]);
 
   const audioOffline = useAudioguiaOffline(lugar);
   const fuenteAudio = audioOffline.fuente;
@@ -115,6 +132,19 @@ export default function DetalleLugarPantalla() {
   }
 
   if (!lugar) {
+    if (falloServidor) {
+      return (
+        <View style={estilos.centro}>
+          <EstadoVacio
+            icono="cloud-offline-outline"
+            titulo={TITULO_PROBLEMA_SERVIDOR}
+            descripcion={MENSAJE_PROBLEMA_SERVIDOR}
+            textoBoton="Reintentar"
+            onPresionarBoton={() => setIntento((n) => n + 1)}
+          />
+        </View>
+      );
+    }
     return (
       <View style={estilos.centro}>
         <Text style={estilos.error}>No se encontró el lugar solicitado.</Text>

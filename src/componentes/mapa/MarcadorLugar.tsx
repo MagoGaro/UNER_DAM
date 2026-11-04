@@ -1,8 +1,9 @@
 import { Callout, Marker } from 'react-native-maps';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { obtenerMetadatoCategoria } from '@/src/tipos/categoria';
+import { useCategorias } from '@/src/hooks/useCategorias';
 import type { LugarCercano } from '@/src/hooks/useLugaresCercanos';
+import { buscarCategoria } from '@/src/servicios/categorias';
 
 interface MarcadorLugarProps {
   lugar: LugarCercano;
@@ -16,22 +17,22 @@ interface MarcadorLugarProps {
  * clásica de un mapa, más liviano y consistente entre Android/iOS.
  */
 export function MarcadorLugar({ lugar, onVerDetalle }: MarcadorLugarProps) {
-  // Se usa `categoriaId` (siempre presente); antes se leía `categoria`, que
-  // los mocks no cargan, y todos los pines quedaban del mismo color.
-  const metadato = obtenerMetadatoCategoria(lugar.categoriaId ?? lugar.categoria);
+  const { categorias } = useCategorias();
+  const cat = buscarCategoria(categorias, lugar.categoriaId);
+  const color = cat?.color ?? '#495057';
 
   return (
     <Marker
       coordinate={{ latitude: lugar.coordenadas.latitud, longitude: lugar.coordenadas.longitud }}
       title={lugar.nombre}
-      pinColor={metadato.color}>
+      pinColor={color}>
       <Callout onPress={() => onVerDetalle(lugar)} tooltip={false}>
         <View style={styles.callout}>
           <Text style={styles.calloutNombre} numberOfLines={2}>
             {lugar.nombre}
           </Text>
           <Text style={styles.calloutDistancia}>
-            {lugar.distanciaFormateada ?? metadato.etiqueta}
+            {lugar.distanciaFormateada ?? cat?.nombre ?? 'Lugar'}
           </Text>
           <Text style={styles.calloutAccion}>Ver detalle ›</Text>
         </View>

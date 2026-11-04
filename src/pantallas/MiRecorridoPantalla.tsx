@@ -8,6 +8,7 @@ import { AvisoBanner } from '@/src/componentes/estados/AvisoBanner';
 import { EstadoVacio } from '@/src/componentes/estados/EstadoVacio';
 import { TarjetaVisita } from '@/src/componentes/recorrido/TarjetaVisita';
 import { COLORES } from '@/src/configuracion/tema';
+import { MENSAJE_PROBLEMA_SERVIDOR, TITULO_PROBLEMA_SERVIDOR } from '@/src/servicios/api/mensajes';
 import { useAhora } from '@/src/hooks/useAhora';
 import { useCatalogoLugares } from '@/src/hooks/useCatalogoLugares';
 import { useConexion } from '@/src/hooks/useConexion';
@@ -73,9 +74,9 @@ export function MiRecorridoPantalla() {
         <ActivityIndicator size="large" color={COLORES.primario} style={{ marginTop: 40 }} />
       ) : estado.errorAlCargar ? (
         <EstadoVacio
-          icono="alert-circle-outline"
-          titulo="No pudimos abrir tu recorrido"
-          descripcion="Tus visitas siguen guardadas en el teléfono."
+          icono="cloud-offline-outline"
+          titulo={TITULO_PROBLEMA_SERVIDOR}
+          descripcion={MENSAJE_PROBLEMA_SERVIDOR}
           textoBoton="Reintentar"
           onPresionarBoton={() => recorrido.recargar()}
         />

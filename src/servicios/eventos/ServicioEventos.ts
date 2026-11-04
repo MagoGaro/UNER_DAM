@@ -9,10 +9,8 @@ export interface FiltrosEventos {
 }
 
 /**
- * Puerto de la agenda. Las pantallas dependen de esta interfaz y nunca
- * del mock. Devuelve siempre la forma de la API (`datos` + `meta` o
- * `error`) y es asíncrono desde el día uno, aunque el mock responda al
- * instante. Una falla de red se representa con `Promise.reject`.
+ * Puerto de la agenda. Devuelve la forma de la API (`datos` + `meta` o
+ * `error`). Una falla de red se representa con `Promise.reject`.
  */
 export interface ServicioEventos {
   listarEventos(filtros?: FiltrosEventos): Promise<RespuestaApi<Evento[]>>;

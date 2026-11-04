@@ -3,7 +3,7 @@ import type { Lugar } from '@/src/tipos/lugar';
 import { filtrarLugares } from './filtrarLugares';
 import type { FiltrosLugares, ServicioLugares } from './ServicioLugares';
 
-const CLAVE = 'catalogo.lugares';
+const CLAVE = 'catalogo.lugares.api.v1';
 
 /**
  * Envuelve cualquier ServicioLugares y guarda el catálogo en el teléfono
@@ -40,5 +40,9 @@ export class ServicioLugaresConCache implements ServicioLugares {
       if (!guardados) throw error;
       return guardados.find((l) => l.id === id) ?? null;
     }
+  }
+
+  obtenerPorQr(codigo: string): Promise<Lugar | null> {
+    return this.interno.obtenerPorQr(codigo);
   }
 }

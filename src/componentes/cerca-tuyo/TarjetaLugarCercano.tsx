@@ -2,8 +2,9 @@ import { StyleSheet, Text, View, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
-import { obtenerMetadatoCategoria } from '@/src/tipos/categoria';
+import { useCategorias } from '@/src/hooks/useCategorias';
 import type { LugarCercano } from '@/src/hooks/useLugaresCercanos';
+import { buscarCategoria } from '@/src/servicios/categorias';
 
 interface TarjetaLugarCercanoProps {
   lugar: LugarCercano;
@@ -11,11 +12,10 @@ interface TarjetaLugarCercanoProps {
 }
 
 export function TarjetaLugarCercano({ lugar, onVerDetalle }: TarjetaLugarCercanoProps) {
-  // El catálogo trae `categoriaId` ("cat-museos"); `categoria` es opcional y
-  // los mocks no lo cargan, por eso antes todas las tarjetas decían "Lugar".
-  const metadato = obtenerMetadatoCategoria(lugar.categoriaId ?? lugar.categoria);
-  const colorChip = metadato.color;
-  const etiquetaCategoria = metadato.etiqueta;
+  const { categorias } = useCategorias();
+  const cat = buscarCategoria(categorias, lugar.categoriaId);
+  const colorChip = cat?.color ?? '#495057';
+  const etiquetaCategoria = cat?.nombre ?? 'Lugar';
 
   return (
     <Pressable style={styles.tarjeta} onPress={() => onVerDetalle(lugar)}>

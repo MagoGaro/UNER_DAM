@@ -1,20 +1,47 @@
 import { crearKVStoreEnMemoria } from '@/src/almacenamiento/kvStore';
 import { ErrorDeServicio } from '@/src/tipos/api';
 import type { Lugar } from '@/src/tipos/lugar';
-import { LUGARES_DE_PRUEBA } from './lugaresDePrueba';
 import { ServicioLugaresConCache } from './servicioLugaresConCache';
 import type { FiltrosLugares, ServicioLugares } from './ServicioLugares';
+
+function lugar(parcial: Pick<Lugar, 'id' | 'nombre' | 'categoriaId'> & Partial<Lugar>): Lugar {
+  return {
+    descripcionCorta: 'corto',
+    descripcion: 'largo',
+    coordenadas: { latitud: -32.22, longitud: -58.14 },
+    direccion: 'Colón',
+    imagenes: [],
+    horarios: [],
+    telefono: null,
+    sitioWeb: null,
+    precioEntrada: null,
+    audioguia: null,
+    codigoQr: null,
+    accesible: true,
+    actualizadoEn: '2026-08-01T10:30:00-03:00',
+    activo: true,
+    ...parcial,
+  };
+}
+
+const CATALOGO: Lugar[] = [
+  lugar({ id: 'lug-004', nombre: 'Molino Forclaz', categoriaId: 'cat-museos' }),
+  lugar({ id: 'lug-001', nombre: 'Termas de Colón', categoriaId: 'cat-termas' }),
+];
 
 function servicioIntermitente() {
   const estado = { hayRed: true };
   const interno: ServicioLugares = {
     async listarLugares(_filtros?: FiltrosLugares) {
       if (!estado.hayRed) throw new ErrorDeServicio('SIN_RED', 'sin red');
-      return LUGARES_DE_PRUEBA as readonly Lugar[];
+      return CATALOGO;
     },
     async obtenerPorId(id) {
       if (!estado.hayRed) throw new ErrorDeServicio('SIN_RED', 'sin red');
-      return LUGARES_DE_PRUEBA.find((l) => l.id === id) ?? null;
+      return CATALOGO.find((l) => l.id === id) ?? null;
+    },
+    async obtenerPorQr() {
+      return null;
     },
   };
   return { estado, interno };
@@ -57,6 +84,6 @@ describe('ServicioLugaresConCache', () => {
     await s.listarLugares();
     await s.listarLugares({ busqueda: 'zzz' });
     estado.hayRed = false;
-    expect((await s.listarLugares()).length).toBe(LUGARES_DE_PRUEBA.filter((l) => l.activo).length);
+    expect((await s.listarLugares()).length).toBe(CATALOGO.filter((l) => l.activo).length);
   });
 });

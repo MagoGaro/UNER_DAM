@@ -5,7 +5,7 @@ import { ServicioEventosGuardadosApi } from '@/src/servicios/eventosGuardados/se
 import { ServicioFavoritosApi } from '@/src/servicios/favoritos/servicioFavoritosApi';
 import { ServicioLugaresApi } from '@/src/servicios/lugares/servicioLugaresApi';
 import { ServicioVisitasHttp, tipoMimeDeFoto } from '@/src/servicios/visitas/servicioVisitasHttp';
-import { LUGARES_DE_PRUEBA } from '@/src/servicios/lugares/lugaresDePrueba';
+import type { Lugar } from '@/src/tipos/lugar';
 import type { Visita } from '@/src/tipos/visita';
 import { clienteDePrueba, fallo, ok } from './ayudasDePrueba';
 
@@ -13,6 +13,26 @@ const archivoSubido = (url: string) => ({ datos: { url, tipo: 'imagen' as const,
 const errorDeArchivo = (codigo: string) => ({ error: { codigo, mensaje: 'mensaje' } });
 
 const usuario = { id: 'usr-201', nombre: 'Lucía', email: 'lucia@mail.com' };
+
+const lugarBase: Lugar = {
+  id: 'lug-004',
+  nombre: 'Molino Forclaz',
+  categoriaId: 'cat-museos',
+  descripcionCorta: 'Molino',
+  descripcion: 'Molino de viento',
+  coordenadas: { latitud: -32.1904, longitud: -58.1932 },
+  direccion: 'Colonia San José',
+  imagenes: [],
+  horarios: [],
+  telefono: null,
+  sitioWeb: null,
+  precioEntrada: 1500,
+  audioguia: null,
+  codigoQr: 'COLON:lug-004',
+  accesible: false,
+  activo: true,
+  actualizadoEn: '2026-08-01T10:30:00-03:00',
+};
 
 describe('ServicioAuthApi', () => {
   it('ingresa con la contraseña en el campo `contrasena`', async () => {
@@ -60,7 +80,7 @@ describe('ServicioFavoritosApi', () => {
 
 describe('ServicioLugaresApi', () => {
   it('trae el catálogo, descarta los dados de baja y suma la imagen de la tarjeta', async () => {
-    const base = LUGARES_DE_PRUEBA[0];
+    const base = lugarBase;
     const lista = [
       { ...base, id: 'lug-a', imagenes: ['http://img/a.jpg'], activo: true },
       { ...base, id: 'lug-b', activo: false },

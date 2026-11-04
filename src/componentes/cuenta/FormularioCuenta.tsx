@@ -1,3 +1,4 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -16,6 +17,7 @@ export function FormularioCuenta() {
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [verContrasena, setVerContrasena] = useState(false);
   const [errorLocal, setErrorLocal] = useState<string | null>(null);
 
   const enviar = async () => {
@@ -74,19 +76,29 @@ export function FormularioCuenta() {
         textContentType="emailAddress"
         accessibilityLabel="Email"
       />
-      <TextInput
-        style={styles.campo}
-        placeholder="Contraseña"
-        placeholderTextColor={COLORES.textoTenue}
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        autoCapitalize="none"
-        autoComplete={modo === 'crear' ? 'new-password' : 'current-password'}
-        textContentType={modo === 'crear' ? 'newPassword' : 'password'}
-        accessibilityLabel="Contraseña"
-        onSubmitEditing={enviar}
-      />
+      <View style={styles.campoContrasena}>
+        <TextInput
+          style={styles.campoContrasenaInput}
+          placeholder="Contraseña"
+          placeholderTextColor={COLORES.textoTenue}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!verContrasena}
+          autoCapitalize="none"
+          autoComplete={modo === 'crear' ? 'new-password' : 'current-password'}
+          textContentType={modo === 'crear' ? 'newPassword' : 'password'}
+          accessibilityLabel="Contraseña"
+          onSubmitEditing={enviar}
+        />
+        <TouchableOpacity
+          style={styles.ojo}
+          onPress={() => setVerContrasena((visible) => !visible)}
+          accessibilityRole="button"
+          accessibilityLabel={verContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+          hitSlop={8}>
+          <Ionicons name={verContrasena ? 'eye-off-outline' : 'eye-outline'} size={22} color={COLORES.textoTenue} />
+        </TouchableOpacity>
+      </View>
 
       {mensaje ? <AvisoBanner texto={mensaje} tono="peligro" /> : null}
 
@@ -125,5 +137,28 @@ const styles = StyleSheet.create({
     backgroundColor: COLORES.superficie,
     fontSize: 17,
     color: COLORES.texto,
+  },
+  campoContrasena: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 52,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: COLORES.borde,
+    backgroundColor: COLORES.superficie,
+  },
+  campoContrasenaInput: {
+    flex: 1,
+    minHeight: 52,
+    paddingHorizontal: 14,
+    fontSize: 17,
+    color: COLORES.texto,
+  },
+  ojo: {
+    minWidth: 44,
+    minHeight: 44,
+    marginRight: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

@@ -19,10 +19,8 @@ export interface DatosIngreso {
 }
 
 /**
- * Puerto de la cuenta. Hoy lo implementa un mock; cuando llegue la API de
- * la cátedra solo cambia el `fetch` dentro de la implementación real (ver
- * `./index.ts`). Los métodos pueden lanzar `ErrorDeServicio` ("SIN_RED")
- * si no hay conexión.
+ * Puerto de la cuenta (`/auth` y `/yo`). Los métodos pueden lanzar
+ * `ErrorDeServicio` ("SIN_RED") si no hay conexión con el servidor.
  */
 export interface ServicioAuth {
   registrar(datos: DatosRegistro): Promise<RespuestaApi<SesionApi>>;

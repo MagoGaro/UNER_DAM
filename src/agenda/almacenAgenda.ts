@@ -18,8 +18,8 @@ import {
 /** Cuántos días hacia adelante muestra la agenda (empezando por hoy). */
 export const DIAS_AGENDA = 14;
 
-const CLAVE_CACHE = 'agenda:cache:v1';
-const CLAVE_GUARDADOS = 'agenda:guardados:v1';
+const CLAVE_CACHE = 'agenda:cache.api.v1';
+const CLAVE_GUARDADOS = 'agenda:guardados.api.v1';
 
 export type EstadoCargaAgenda = 'inicial' | 'cargando' | 'listo' | 'error';
 

@@ -1,6 +1,6 @@
 import { crearKVStoreEnMemoria } from '@/src/almacenamiento/kvStore';
 import type { ServicioRecordatorios } from '@/src/notificaciones/recordatoriosEventos';
-import { ServicioEventosDePrueba } from '@/src/servicios/eventos/servicioEventosDePrueba';
+import type { ServicioEventos } from '@/src/servicios/eventos';
 import type { Evento } from '@/src/tipos/evento';
 import { aISOConZona } from '@/src/utils/fechas';
 import type { ServicioEventosGuardados } from '@/src/servicios/eventosGuardados';
@@ -12,6 +12,18 @@ jest.mock('@/src/servicios/eventosGuardados', () => ({ servicioEventosGuardados:
 
 const ahora = new Date(2026, 9, 22, 9, 0);
 const enHoras = (h: number) => aISOConZona(new Date(ahora.getTime() + h * 3_600_000));
+
+function servicioCon(fuente: () => Evento[]): ServicioEventos {
+  return {
+    async listarEventos() {
+      return { datos: fuente(), meta: null };
+    },
+    async obtenerEvento(id: string) {
+      const ev = fuente().find((e) => e.id === id);
+      return ev ? { datos: ev, meta: null } : { error: { codigo: 'EVENTO_NO_ENCONTRADO', mensaje: 'No está.' } };
+    },
+  };
+}
 
 function evento(extra: Partial<Evento> = {}): Evento {
   return {
@@ -54,7 +66,7 @@ describe('almacenAgenda', () => {
     const { servicio, registro } = recordatoriosFalsos();
     let datos = [evento()];
     const agenda = crearAgenda({
-      servicio: new ServicioEventosDePrueba(() => datos, 0),
+      servicio: servicioCon(() => datos),
       store: crearKVStoreEnMemoria(),
       recordatorios: servicio,
       ahora: () => ahora,
@@ -75,7 +87,7 @@ describe('almacenAgenda', () => {
     const { servicio, registro } = recordatoriosFalsos();
     let datos = [evento()];
     const agenda = crearAgenda({
-      servicio: new ServicioEventosDePrueba(() => datos, 0),
+      servicio: servicioCon(() => datos),
       store: crearKVStoreEnMemoria(),
       recordatorios: servicio,
       ahora: () => ahora,
@@ -99,7 +111,7 @@ describe('almacenAgenda', () => {
     const { servicio } = recordatoriosFalsos();
     const store = crearKVStoreEnMemoria();
     const conRed = crearAgenda({
-      servicio: new ServicioEventosDePrueba(() => [evento()], 0),
+      servicio: servicioCon(() => [evento()]),
       store,
       recordatorios: servicio,
       ahora: () => ahora,
@@ -134,7 +146,7 @@ describe('almacenAgenda', () => {
   it('guardar un evento cancelado no programa recordatorio', async () => {
     const { servicio, registro } = recordatoriosFalsos();
     const agenda = crearAgenda({
-      servicio: new ServicioEventosDePrueba(() => [], 0),
+      servicio: servicioCon(() => []),
       store: crearKVStoreEnMemoria(),
       recordatorios: servicio,
       ahora: () => ahora,
@@ -170,7 +182,7 @@ describe('eventos guardados en la cuenta', () => {
   function armar(servidor: ServicioEventosGuardados, datos: Evento[]) {
     const { servicio } = recordatoriosFalsos();
     return crearAgenda({
-      servicio: new ServicioEventosDePrueba(() => datos, 0),
+      servicio: servicioCon(() => datos),
       store: crearKVStoreEnMemoria(),
       recordatorios: servicio,
       ahora: () => ahora,

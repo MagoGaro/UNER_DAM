@@ -20,11 +20,12 @@ import { MapaLugares } from '@/src/componentes/mapa/MapaLugares';
 import { FlechaOrientacion } from '@/src/componentes/orientacion/FlechaOrientacion';
 import { PREFERENCIAS_POR_DEFECTO } from '@/src/configuracion/preferenciasPorDefecto';
 import { useAvisosProximidad } from '@/src/hooks/useAvisosProximidad';
+import { useCategorias } from '@/src/hooks/useCategorias';
 import { useSesion } from '@/src/sesion';
 import { type LugarCercano, useLugaresCercanos } from '@/src/hooks/useLugaresCercanos';
 import { usePosicionUsuario } from '@/src/hooks/usePosicionUsuario';
 import { rutaDetalleLugar } from '@/src/navegacion/rutas';
-import type { Categoria } from '@/src/tipos/categoria';
+import { MENSAJE_PROBLEMA_SERVIDOR, TITULO_PROBLEMA_SERVIDOR } from '@/src/servicios/api/mensajes';
 
 function normalizar(texto: string): string {
   return texto
@@ -35,7 +36,7 @@ function normalizar(texto: string): string {
 }
 
 export function InicioPantalla() {
-  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<Categoria | null>(null);
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string | null>(null);
   const [filtrosVisibles, setFiltrosVisibles] = useState(true);
   const [textoBusqueda, setTextoBusqueda] = useState('');
   const inputBusquedaRef = useRef<TextInput>(null);
@@ -44,6 +45,7 @@ export function InicioPantalla() {
     usePosicionUsuario();
 
   const { usuario } = useSesion();
+  const { categorias } = useCategorias();
 
   const { lugares, estado: estadoLugares, reintentar: reintentarLugares } = useLugaresCercanos(
     posicion,
@@ -95,6 +97,7 @@ export function InicioPantalla() {
 
         {filtrosVisibles ? (
           <FiltroCategoria
+            categorias={categorias}
             categoriaSeleccionada={categoriaSeleccionada}
             onCambiarCategoria={setCategoriaSeleccionada}
           />
@@ -113,8 +116,8 @@ export function InicioPantalla() {
         ) : estadoLugares === 'error' ? (
           <EstadoVacio
             icono="cloud-offline-outline"
-            titulo="No se pudo cargar el catálogo de lugares"
-            descripcion="Revisá tu conexión e intentá de nuevo."
+            titulo={TITULO_PROBLEMA_SERVIDOR}
+            descripcion={MENSAJE_PROBLEMA_SERVIDOR}
             textoBoton="Reintentar"
             onPresionarBoton={reintentarLugares}
           />

@@ -22,10 +22,12 @@ import { EtiquetaOrigen } from '@/src/componentes/recorrido/EtiquetaOrigen';
 import { SelectorFoto } from '@/src/componentes/recorrido/SelectorFoto';
 import { COLORES } from '@/src/configuracion/tema';
 import { useCatalogoLugares } from '@/src/hooks/useCatalogoLugares';
+import { useCategorias } from '@/src/hooks/useCategorias';
 import { rutaDetalleVisita } from '@/src/navegacion/rutas';
 import { LARGO_MAXIMO_NOTA, recorrido } from '@/src/recorrido';
 import { RADIO_REGISTRO_GPS_METROS } from '@/src/recorrido/cercania';
-import { obtenerMetadatoCategoria } from '@/src/tipos/categoria';
+import { buscarCategoria } from '@/src/servicios/categorias';
+import { MENSAJE_PROBLEMA_SERVIDOR, TITULO_PROBLEMA_SERVIDOR } from '@/src/servicios/api/mensajes';
 import type { OrigenVisita } from '@/src/tipos/visita';
 import { desdeISO, formatearHora } from '@/src/utils/fechas';
 import { distanciaMetros } from '@/src/utils/geo';
@@ -34,7 +36,8 @@ const ORIGENES_VALIDOS: OrigenVisita[] = ['qr', 'gps', 'manual'];
 
 /** Último paso: foto y nota opcionales, y "Registrar visita". */
 export function ConfirmarVisitaPantalla({ lugarId, origen: origenParam }: { lugarId?: string; origen?: string }) {
-  const { porId, estado: estadoCatalogo } = useCatalogoLugares();
+  const { porId, estado: estadoCatalogo, reintentar } = useCatalogoLugares();
+  const { categorias } = useCategorias();
   const lugar = lugarId ? porId[lugarId] : undefined;
   const [origen, setOrigen] = useState<OrigenVisita>(
     ORIGENES_VALIDOS.includes(origenParam as OrigenVisita) ? (origenParam as OrigenVisita) : 'manual'
@@ -69,6 +72,14 @@ export function ConfirmarVisitaPantalla({ lugarId, origen: origenParam }: { luga
         <Stack.Screen options={{ title: 'Registrar visita' }} />
         {estadoCatalogo === 'cargando' ? (
           <ActivityIndicator size="large" color={COLORES.primario} />
+        ) : estadoCatalogo === 'error' ? (
+          <EstadoVacio
+            icono="cloud-offline-outline"
+            titulo={TITULO_PROBLEMA_SERVIDOR}
+            descripcion={MENSAJE_PROBLEMA_SERVIDOR}
+            textoBoton="Reintentar"
+            onPresionarBoton={reintentar}
+          />
         ) : (
           <EstadoVacio
             icono="help-circle-outline"
@@ -82,7 +93,7 @@ export function ConfirmarVisitaPantalla({ lugarId, origen: origenParam }: { luga
   }
 
   const yaHoy = recorrido.visitaDeHoy(lugar.id);
-  const meta = obtenerMetadatoCategoria(lugar.categoriaId);
+  const cat = buscarCategoria(categorias, lugar.categoriaId);
 
   async function registrar() {
     if (!lugar) return;
@@ -108,7 +119,7 @@ export function ConfirmarVisitaPantalla({ lugarId, origen: origenParam }: { luga
               <Image source={{ uri: lugar.imagenes[0] }} style={styles.miniatura} contentFit="cover" cachePolicy="disk" />
             ) : null}
             <View style={{ flex: 1, gap: 4 }}>
-              <Text style={styles.categoria}>{meta.etiqueta}</Text>
+              <Text style={styles.categoria}>{cat?.nombre ?? 'Lugar'}</Text>
               <Text style={styles.nombre}>{lugar.nombre}</Text>
               <EtiquetaOrigen origen={origen} />
             </View>

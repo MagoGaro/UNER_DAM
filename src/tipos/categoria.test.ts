@@ -1,38 +1,28 @@
-import { LUGARES_DE_PRUEBA } from '@/src/servicios/lugares/lugaresDePrueba';
-import { obtenerMetadatoCategoria } from './categoria';
+import { buscarCategoria } from '@/src/servicios/categorias';
+import { iconoCategoria } from './categoria';
 
-describe('obtenerMetadatoCategoria', () => {
-  it('reconoce los ids del catálogo en plural', () => {
-    expect(obtenerMetadatoCategoria('cat-museos').categoria).toBe('museo');
-    expect(obtenerMetadatoCategoria('cat-playas').categoria).toBe('playa');
-    expect(obtenerMetadatoCategoria('cat-termas').categoria).toBe('termas');
-    expect(obtenerMetadatoCategoria('museo').categoria).toBe('museo');
+describe('iconoCategoria', () => {
+  it('conserva el nombre de Ionicons que manda la API', () => {
+    expect(iconoCategoria('sunny-outline')).toBe('sunny-outline');
   });
 
-  it('ningún lugar del catálogo de prueba cae en "Otro" salvo el que lo es', () => {
-    const enOtro = LUGARES_DE_PRUEBA.filter((l) => obtenerMetadatoCategoria(l.categoriaId).categoria === 'otro');
-    expect(enOtro.map((l) => l.categoriaId)).toEqual(['cat-otro']);
-  });
-
-  it('valores raros caen en "Otro" sin romper', () => {
-    expect(obtenerMetadatoCategoria(null).categoria).toBe('otro');
-    expect(obtenerMetadatoCategoria('cat-inexistente').categoria).toBe('otro');
+  it('sin ícono usa el pin genérico', () => {
+    expect(iconoCategoria(undefined)).toBe('location-outline');
+    expect(iconoCategoria('')).toBe('location-outline');
   });
 });
 
-describe('categorías de la API', () => {
-  it('reconoce todas las categorías del catálogo de la API', () => {
-    for (const [id, clave] of [
-      ['cat-playas', 'playa'],
-      ['cat-termas', 'termas'],
-      ['cat-museos', 'museo'],
-      ['cat-gastronomia', 'gastronomia'],
-      ['cat-artesanias', 'artesanias'],
-      ['cat-naturaleza', 'naturaleza'],
-      ['cat-alojamiento', 'alojamiento'],
-      ['cat-bodegas', 'bodegas'],
-    ] as const) {
-      expect(obtenerMetadatoCategoria(id).categoria).toBe(clave);
-    }
+describe('buscarCategoria', () => {
+  const lista = [
+    { id: 'cat-museos', nombre: 'Museos y patrimonio', icono: 'business-outline', color: '#8E5A4A', orden: 3 },
+  ];
+
+  it('encuentra la categoría por id de la API', () => {
+    expect(buscarCategoria(lista, 'cat-museos')?.nombre).toBe('Museos y patrimonio');
+  });
+
+  it('un id que no está en el catálogo no inventa una categoría', () => {
+    expect(buscarCategoria(lista, 'cat-otro')).toBeNull();
+    expect(buscarCategoria(lista, null)).toBeNull();
   });
 });

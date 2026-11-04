@@ -1,5 +1,5 @@
-import { crearEventosDePrueba } from '@/src/mocks/eventos';
 import type { Evento } from '@/src/tipos/evento';
+import { aISOConZona, inicioDelDia } from '@/src/utils/fechas';
 import {
   contarPorDia,
   detectarCambios,
@@ -33,19 +33,25 @@ const guardado = (extra: Partial<EventoGuardado> = {}): EventoGuardado => ({
   ...extra,
 });
 
-describe('agenda', () => {
-  it('los mocks compilan contra el tipo y tienen eventos para hoy', () => {
-    const hoy = new Date();
-    expect(eventosDelDia(crearEventosDePrueba(hoy), hoy).length).toBeGreaterThan(0);
-  });
+function en(dias: number, hora: number, minuto: number, base: Date): string {
+  const d = inicioDelDia(base);
+  d.setDate(d.getDate() + dias);
+  d.setHours(hora, minuto, 0, 0);
+  return aISOConZona(d);
+}
 
-  it('eventosDelDia ordena por hora y filtra por día local', () => {
+describe('agenda', () => {
+  it('eventosDelDia ordena por hora y deja afuera el día anterior', () => {
     const hoy = new Date(2026, 9, 22, 8);
-    const eventos = crearEventosDePrueba(hoy);
+    const eventos: Evento[] = [
+      { ...base, id: 'evt-tarde', inicio: en(0, 18, 0, hoy), fin: en(0, 19, 0, hoy) },
+      { ...base, id: 'evt-manana', inicio: en(0, 9, 0, hoy), fin: en(0, 10, 0, hoy) },
+      { ...base, id: 'evt-ayer', inicio: en(-1, 18, 0, hoy), fin: en(-1, 19, 0, hoy) },
+    ];
     const deHoy = eventosDelDia(eventos, hoy);
     const horas = deHoy.map((e) => new Date(e.inicio).getTime());
     expect([...horas].sort((a, b) => a - b)).toEqual(horas);
-    expect(deHoy.find((e) => e.id === 'evt-000')).toBeUndefined(); // el de ayer no aparece
+    expect(deHoy.map((e) => e.id)).toEqual(['evt-manana', 'evt-tarde']);
   });
 
   it('estadoVisible marca finalizado un programado que ya terminó', () => {

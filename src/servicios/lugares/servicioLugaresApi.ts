@@ -33,4 +33,15 @@ export class ServicioLugaresApi implements ServicioLugares {
     }
     return r.datos.activo ? mapearLugar(r.datos) : null;
   }
+
+  async obtenerPorQr(codigo: string): Promise<Lugar | null> {
+    const r = await this.cliente.pedir<Lugar>({
+      ruta: `/lugares/qr/${encodeURIComponent(codigo)}`,
+    });
+    if (esError(r)) {
+      if (r.error.codigo === 'QR_NO_RECONOCIDO' || r.error.codigo === 'LUGAR_NO_ENCONTRADO') return null;
+      throw new ErrorDeServicio(r.error.codigo, r.error.mensaje);
+    }
+    return r.datos.activo ? mapearLugar(r.datos) : null;
+  }
 }

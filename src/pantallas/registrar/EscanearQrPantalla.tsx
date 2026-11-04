@@ -11,6 +11,8 @@ import { COLORES } from '@/src/configuracion/tema';
 import { useCatalogoLugares } from '@/src/hooks/useCatalogoLugares';
 import { rutaConfirmarVisita, rutaElegirLugar } from '@/src/navegacion/rutas';
 import { interpretarCodigoQr } from '@/src/recorrido/codigoQr';
+import { MENSAJE_PROBLEMA_SERVIDOR } from '@/src/servicios/api/mensajes';
+import { servicioLugares } from '@/src/servicios/lugares';
 
 const SEGUNDOS_PARA_AYUDA = 15;
 const PAUSA_ENTRE_AVISOS_MS = 2500;
@@ -45,7 +47,13 @@ export function EscanearQrPantalla() {
     temporizadorAviso.current = setTimeout(() => setAviso(null), 4000);
   }
 
-  function alLeer({ data }: BarcodeScanningResult) {
+  function irAConfirmar(lugarId: string) {
+    procesando.current = true;
+    if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    router.replace(rutaConfirmarVisita(lugarId, 'qr'));
+  }
+
+  async function alLeer({ data }: BarcodeScanningResult) {
     if (procesando.current) return;
     const ahora = Date.now();
     // La cámara dispara el mismo código muchas veces por segundo: se ignora el repetido.
@@ -63,18 +71,32 @@ export function EscanearQrPantalla() {
       avisar(r.mensaje);
       return;
     }
+    if (estadoCatalogo === 'error' && lugares.length === 0) {
+      avisar(MENSAJE_PROBLEMA_SERVIDOR);
+      return;
+    }
     if (estadoCatalogo !== 'listo' && lugares.length === 0) {
       avisar('Estamos cargando la guía, probá de nuevo en un segundo.');
       return;
     }
     const lugar = porId[r.lugarId];
-    if (!lugar) {
-      avisar('Este cartel es de un lugar que ya no está en la guía.');
+    if (lugar) {
+      irAConfirmar(lugar.id);
       return;
     }
     procesando.current = true;
-    if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    router.replace(rutaConfirmarVisita(lugar.id, 'qr'));
+    try {
+      const remoto = await servicioLugares.obtenerPorQr(r.codigo);
+      if (!remoto) {
+        procesando.current = false;
+        avisar('Este cartel es de un lugar que ya no está en la guía.');
+        return;
+      }
+      irAConfirmar(remoto.id);
+    } catch {
+      procesando.current = false;
+      avisar(MENSAJE_PROBLEMA_SERVIDOR);
+    }
   }
 
   if (!permiso) {

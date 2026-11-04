@@ -14,6 +14,7 @@ import { AvisoBanner } from '@/src/componentes/estados/AvisoBanner';
 import { Boton } from '@/src/componentes/estados/Boton';
 import { EstadoVacio } from '@/src/componentes/estados/EstadoVacio';
 import { COLORES } from '@/src/configuracion/tema';
+import { MENSAJE_PROBLEMA_SERVIDOR, TITULO_PROBLEMA_SERVIDOR } from '@/src/servicios/api/mensajes';
 import { useAhora } from '@/src/hooks/useAhora';
 import { useCatalogoLugares } from '@/src/hooks/useCatalogoLugares';
 import { abrirComoLlegar } from '@/src/navegacion/abrirComoLlegar';
@@ -76,7 +77,8 @@ export function DetalleEventoPantalla({ id }: { id: string | undefined }) {
         <Stack.Screen options={{ title: 'Evento' }} />
         <EstadoVacio
           icono={carga.estado === 'error' ? 'cloud-offline-outline' : 'calendar-outline'}
-          titulo={carga.estado === 'error' ? 'No pudimos cargar el evento' : 'Este evento ya no está en la agenda'}
+          titulo={carga.estado === 'error' ? TITULO_PROBLEMA_SERVIDOR : 'Este evento ya no está en la agenda'}
+          descripcion={carga.estado === 'error' ? MENSAJE_PROBLEMA_SERVIDOR : undefined}
           textoBoton={carga.estado === 'error' ? 'Reintentar' : 'Volver a la agenda'}
           onPresionarBoton={() => (carga.estado === 'error' ? setIntento((n) => n + 1) : router.back())}
         />

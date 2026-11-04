@@ -1,8 +1,6 @@
 /**
- * Forma fija de las respuestas de la API de la cátedra (ver «Cómo va a
- * venir la información» en el pedido de Valeria). Los mocks ya devuelven
- * esta misma forma, así que cuando llegue la API real solo cambia el
- * `fetch` dentro de cada servicio, no las pantallas.
+ * Forma fija de las respuestas de la API de la cátedra: `{ datos, meta }`
+ * o `{ error: { codigo, mensaje } }`.
  */
 export interface MetaPaginacion {
   total: number;

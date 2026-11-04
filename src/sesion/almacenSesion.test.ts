@@ -1,18 +1,103 @@
 import { crearKVStoreEnMemoria } from '@/src/almacenamiento/kvStore';
-import { ServicioAuthDePrueba } from '@/src/servicios/auth/servicioAuthDePrueba';
-import type { ServicioAuth } from '@/src/servicios/auth/ServicioAuth';
+import { PREFERENCIAS_POR_DEFECTO } from '@/src/configuracion/preferenciasPorDefecto';
+import type { DatosIngreso, DatosRegistro, ServicioAuth } from '@/src/servicios/auth/ServicioAuth';
 import { ErrorDeServicio } from '@/src/tipos/api';
+import type { Usuario } from '@/src/tipos/usuario';
 import { AlmacenSesion, MENSAJE_SIN_RED } from './almacenSesion';
 import { crearBiometriaDePrueba } from './biometria';
 import { crearTokenStoreEnMemoria } from './tokenStore';
 import { validarIngreso, validarRegistro } from './validaciones';
+
+/** Doble de la cuenta, solo para este test. No lo usa la app. */
+class AuthEnMemoria implements ServicioAuth {
+  private readonly cuentas = new Map<string, { usuario: Usuario; password: string }>();
+  private readonly tokens = new Map<string, string>();
+  private n = 1;
+
+  constructor() {
+    this.cuentas.set('lucia@mail.com', {
+      password: '123456',
+      usuario: {
+        id: 'usr-201',
+        nombre: 'Lucía Méndez',
+        email: 'lucia@mail.com',
+        avatarUrl: null,
+        creadoEn: '2026-09-02T18:20:00-03:00',
+        preferencias: { ...PREFERENCIAS_POR_DEFECTO },
+      },
+    });
+  }
+
+  private cortarSiNoHayRed(email: string): void {
+    if (email.includes('sinred')) throw new ErrorDeServicio('SIN_RED', MENSAJE_SIN_RED);
+  }
+
+  private emitir(email: string): string {
+    const token = `tok-${this.n}`;
+    this.n += 1;
+    this.tokens.set(token, email);
+    return token;
+  }
+
+  async registrar({ nombre, email, password }: DatosRegistro) {
+    const clave = email.trim().toLowerCase();
+    this.cortarSiNoHayRed(clave);
+    if (this.cuentas.has(clave)) {
+      return { error: { codigo: 'EMAIL_YA_REGISTRADO', mensaje: 'Ya existe una cuenta con ese email.' } };
+    }
+    const usuario: Usuario = {
+      id: `usr-${this.n}`,
+      nombre: nombre.trim(),
+      email: clave,
+      avatarUrl: null,
+      creadoEn: '2026-11-04T10:00:00-03:00',
+      preferencias: { ...PREFERENCIAS_POR_DEFECTO },
+    };
+    this.cuentas.set(clave, { usuario, password });
+    return { datos: { token: this.emitir(clave), usuario }, meta: null as null };
+  }
+
+  async iniciarSesion({ email, password }: DatosIngreso) {
+    const clave = email.trim().toLowerCase();
+    this.cortarSiNoHayRed(clave);
+    const cuenta = this.cuentas.get(clave);
+    if (!cuenta || cuenta.password !== password) {
+      return { error: { codigo: 'CREDENCIALES_INVALIDAS', mensaje: 'El email o la contraseña no son correctos.' } };
+    }
+    return { datos: { token: this.emitir(clave), usuario: cuenta.usuario }, meta: null as null };
+  }
+
+  async obtenerUsuario(token: string) {
+    if (token.startsWith('vencido')) {
+      return { error: { codigo: 'SESION_VENCIDA', mensaje: 'La sesión venció.' } };
+    }
+    const email = this.tokens.get(token);
+    const cuenta = email ? this.cuentas.get(email) : undefined;
+    if (!cuenta) return { error: { codigo: 'NO_AUTENTICADO', mensaje: 'No hay sesión.' } };
+    return { datos: cuenta.usuario, meta: null as null };
+  }
+
+  async actualizarPreferencias(token: string, preferencias: Usuario['preferencias']) {
+    const actual = await this.obtenerUsuario(token);
+    if ('error' in actual) return actual;
+    const email = this.tokens.get(token);
+    const cuenta = email ? this.cuentas.get(email) : undefined;
+    if (!cuenta) return { error: { codigo: 'NO_AUTENTICADO', mensaje: 'No hay sesión.' } };
+    cuenta.usuario = { ...actual.datos, preferencias };
+    return { datos: cuenta.usuario, meta: null as null };
+  }
+
+  async cerrarSesion(_token: string) {
+    return { datos: null, meta: null as null };
+  }
+}
 
 function armar(
   opciones: { biometria?: boolean; aceptaBiometria?: boolean; auth?: ServicioAuth; antesDeCerrar?: () => Promise<void> } = {}
 ) {
   const tokens = crearTokenStoreEnMemoria();
   const kv = crearKVStoreEnMemoria();
-  const auth = opciones.auth ?? new ServicioAuthDePrueba(0);
+  const auth = opciones.auth ?? new AuthEnMemoria();
   const biometria = crearBiometriaDePrueba(opciones.biometria ?? false, opciones.aceptaBiometria ?? true);
   const nueva = () => new AlmacenSesion({ auth, tokens, kv, biometria, antesDeCerrarSesion: opciones.antesDeCerrar });
   return { tokens, kv, auth, nueva, sesion: nueva() };
@@ -130,7 +215,7 @@ describe('AlmacenSesion', () => {
   });
 
   it('sin señal al reabrir sigue activa con el usuario guardado', async () => {
-    const base = new ServicioAuthDePrueba(0);
+    const base = new AuthEnMemoria();
     let hayRed = true;
     const auth: ServicioAuth = {
       registrar: (d) => base.registrar(d),

@@ -4,7 +4,7 @@
 
 Todo el trabajo de los puntos 1 a 6 del pedido está en `main`. Para tener la última versión: `git checkout main` y `git pull`. Después `npm install` (hay paquetes nuevos: expo-secure-store, expo-local-authentication y expo-sensors) y `npx expo start`. Escaneá el QR con Expo Go (Android) o con la cámara (iPhone). Si no conecta, usá `npx expo start --tunnel`.
 
-Cuenta de prueba: `lucia@mail.com` con contraseña `123456`. Un email que contenga "sinred" simula que no hay conexión.
+Cuenta de la API para probar: `lucia@mail.com` con contraseña `lucia1234`. Si no hay `EXPO_PUBLIC_API_URL` o el servidor no responde, la app muestra «Hay un problema con el servidor» y no usa datos de relleno.
 
 Para trabajar en equipo: no se commitea directo a `main`. Cada tarea va en su rama (`git checkout -b nombre-de-la-tarea`), se sube con `git push -u origin nombre-de-la-tarea` y se abre un PR hacia `main`. Otro integrante lo revisa antes de fusionarlo. Antes de abrir el PR tienen que pasar sin errores `npx tsc --noEmit`, `npm run lint` y `npm test`. No subir `node_modules` ni claves o tokens.
 
@@ -50,9 +50,7 @@ capas:
 - `src/utils/geo.ts` — cálculo puro: `distanciaMetros`, `rumboGrados`,
   `formatearDistancia` (+ `yaAviseHoy`/`marcarAviso`, reexportados desde
   `src/almacenamiento/`). Con tests en `geo.test.ts`.
-- `src/servicios/lugares/` — `ServicioLugares` (interfaz) +
-  `ServicioLugaresDePrueba` (mock con lugares reales de Colón, Entre
-  Ríos). **Único lugar que hay que tocar** para conectar el servicio real.
+- `src/servicios/lugares/` — `ServicioLugares` (interfaz) y `ServicioLugaresApi`, con caché en el teléfono.
 - `src/hooks/` — `usePosicionUsuario`, `useRumboDispositivo`,
   `useLugaresCercanos`, `useAvisosProximidad`: cada uno con una sola
   responsabilidad, todos con manejo explícito de permiso denegado / error
@@ -103,7 +101,7 @@ capas:
 
 - Tipos definitivos de `Lugar`/`Categoria`/`Preferencias` (hoy son
   provisorios, en `src/tipos/`).
-- Reemplazar `ServicioLugaresDePrueba` por el servicio real (Integrante 1).
+- El catálogo, la agenda y la cuenta salen de `api-mi-ciudad`.
 - Mapa base sin mosaicos offline (dentro de El Palmar, por ejemplo): sin
   resolver, ver pregunta 3 del seguimiento.
 - A partir de cuántos metros se considera «lejos» un lugar: hoy es
@@ -159,7 +157,7 @@ Todo vive bajo `src/`, con la misma regla de siempre: las pantallas dependen de 
 
 - `src/sesion/` — estado de la cuenta (`AlmacenSesion`): invitado, bloqueada (espera huella o rostro) y activa. Token en `expo-secure-store` (`tokenStore.ts`), biometría en `biometria.ts`, validaciones de los formularios.
 - `src/favoritos/` — favoritos locales con cola de sincronización y `iniciarCuenta()`, que arranca todo desde `TareasDeFondo`.
-- `src/servicios/auth/`, `src/servicios/favoritos/` — interfaz + mock. Para probar: `lucia@mail.com` / `123456`; un email con «sinred» simula que no hay conexión.
+- `src/servicios/auth/`, `src/servicios/favoritos/` — hablan con la API. Para probar: `lucia@mail.com` / `lucia1234`.
 - `src/servicios/lugares/servicioLugaresConCache.ts` — guarda el catálogo para verlo sin señal.
 - `src/audio/` — descarga de audioguías a `expo-file-system` (`audioguias.ts`) y su hook (`useAudioguiaOffline.ts`). El reproductor está en `app/lugar/[id].tsx`.
 - `src/pantallas/YoPantalla.tsx` — pestaña «Yo»: cuenta, favoritos, avisos de cercanía y «guardar audioguías para usar sin señal».
@@ -169,7 +167,7 @@ Las decisiones tomadas para cerrar los puntos abiertos del pedido están en [`do
 
 ### Conectar con la API de Mi Ciudad
 
-La app puede usar la API de la cátedra (`api-mi-ciudad`, con SQLite, PostgreSQL, MySQL o MariaDB según cómo se levante). Sin configurar nada usa datos de prueba. Para usar la API:
+La app usa la API de la cátedra (`api-mi-ciudad`). Si `EXPO_PUBLIC_API_URL` no está o la API no responde, se ve «Hay un problema con el servidor» y no hay datos de relleno. Para conectarla:
 
 1. Levantarla (README de la API): `docker compose up`, o `pnpm install`, `pnpm db:reiniciar` y `pnpm dev` con Node 24.
 2. Copiar `.env.example` a `.env.local` y poner la IP de la computadora donde corre la API, por ejemplo `EXPO_PUBLIC_API_URL=http://192.168.0.10:3000` (desde el celular no sirve `localhost`; misma red wifi).

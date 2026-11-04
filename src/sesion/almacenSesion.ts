@@ -1,4 +1,5 @@
 import { guardarJSON, leerJSON, type KVStore } from '@/src/almacenamiento/kvStore';
+import { MENSAJE_PROBLEMA_SERVIDOR } from '@/src/servicios/api/mensajes';
 import type { ServicioAuth } from '@/src/servicios/auth/ServicioAuth';
 import { ErrorDeServicio, esError } from '@/src/tipos/api';
 import type { Preferencias } from '@/src/tipos/preferencias';
@@ -29,7 +30,7 @@ export interface ResultadoAccion {
 
 const CLAVE_USUARIO = 'sesion.usuario';
 const CLAVE_BIOMETRIA = 'sesion.biometria';
-export const MENSAJE_SIN_RED = 'No hay conexión. Probá de nuevo cuando tengas señal.';
+export const MENSAJE_SIN_RED = MENSAJE_PROBLEMA_SERVIDOR;
 
 export interface DependenciasSesion {
   auth: ServicioAuth;

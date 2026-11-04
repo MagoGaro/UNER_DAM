@@ -11,6 +11,7 @@ import { AvisoBanner } from '@/src/componentes/estados/AvisoBanner';
 import { Boton } from '@/src/componentes/estados/Boton';
 import { EstadoVacio } from '@/src/componentes/estados/EstadoVacio';
 import { COLORES } from '@/src/configuracion/tema';
+import { MENSAJE_PROBLEMA_SERVIDOR, TITULO_PROBLEMA_SERVIDOR } from '@/src/servicios/api/mensajes';
 import { useAhora } from '@/src/hooks/useAhora';
 import { useCatalogoLugares } from '@/src/hooks/useCatalogoLugares';
 import { rutaDetalleEvento } from '@/src/navegacion/rutas';
@@ -102,8 +103,8 @@ export function AgendaPantalla() {
       ) : estado.estado === 'error' && estado.eventos.length === 0 ? (
         <EstadoVacio
           icono="cloud-offline-outline"
-          titulo="No pudimos cargar la agenda"
-          descripcion="Revisá tu conexión. Cuando la abras con señal, queda guardada en el teléfono."
+          titulo={TITULO_PROBLEMA_SERVIDOR}
+          descripcion={MENSAJE_PROBLEMA_SERVIDOR}
           textoBoton="Reintentar"
           onPresionarBoton={() => agenda.cargarEventos()}
         />

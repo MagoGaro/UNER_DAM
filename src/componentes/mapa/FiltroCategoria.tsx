@@ -2,11 +2,12 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ComponentProps } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
 
-import { CATEGORIAS, type Categoria, obtenerMetadatoCategoria } from '@/src/tipos/categoria';
+import { iconoCategoria } from '@/src/tipos/categoria';
 
 interface FiltroCategoriaProps {
-  categoriaSeleccionada: Categoria | null;
-  onCambiarCategoria: (categoria: Categoria | null) => void;
+  categorias: { id: string; nombre: string; icono: string; color: string }[];
+  categoriaSeleccionada: string | null;
+  onCambiarCategoria: (categoriaId: string | null) => void;
 }
 
 /**
@@ -15,7 +16,7 @@ interface FiltroCategoriaProps {
  * se marca con un anillo blanco, para no depender de un estado "gris"
  * que el mockup de diseño no usa.
  */
-export function FiltroCategoria({ categoriaSeleccionada, onCambiarCategoria }: FiltroCategoriaProps) {
+export function FiltroCategoria({ categorias, categoriaSeleccionada, onCambiarCategoria }: FiltroCategoriaProps) {
   return (
     <ScrollView
       horizontal
@@ -28,19 +29,16 @@ export function FiltroCategoria({ categoriaSeleccionada, onCambiarCategoria }: F
         seleccionado={categoriaSeleccionada === null}
         onPress={() => onCambiarCategoria(null)}
       />
-      {CATEGORIAS.map((categoria) => {
-        const metadato = obtenerMetadatoCategoria(categoria);
-        return (
+      {categorias.map((categoria) => (
           <Chip
-            key={categoria}
-            etiqueta={metadato.etiqueta}
-            color={metadato.color}
-            icono={metadato.icono}
-            seleccionado={categoriaSeleccionada === categoria}
-            onPress={() => onCambiarCategoria(categoria)}
+            key={categoria.id}
+            etiqueta={categoria.nombre}
+            color={categoria.color}
+            icono={iconoCategoria(categoria.icono)}
+            seleccionado={categoriaSeleccionada === categoria.id}
+            onPress={() => onCambiarCategoria(categoria.id)}
           />
-        );
-      })}
+        ))}
     </ScrollView>
   );
 }
